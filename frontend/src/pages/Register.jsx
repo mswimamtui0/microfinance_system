@@ -121,7 +121,6 @@ const Register = () => {
           }
           
           toast.success('Welcome to MicroFinance System!');
-          // Redirect to /app (dashboard) instead of /
           navigate('/app');
         } else {
           console.log('No tokens in response, trying login...');
@@ -417,7 +416,7 @@ const Register = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">© 2026 MicroFinance System. All rights reserved.</p>
+            <p className="text-xs text-gray-500">2026 MicroFinance System. All rights reserved.</p>
           </div>
         </div>
       </div>
