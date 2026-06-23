@@ -1,6 +1,9 @@
 import axios from 'axios';
 
+// Use Render backend URL
 const API_URL = 'https://microfinance-system-df49.onrender.com/api';
+
+console.log('🔗 API_URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -9,6 +12,8 @@ const api = axios.create({
   },
   withCredentials: false,
 });
+
+// ... rest of your code
 
 // Add token to requests
 api.interceptors.request.use(
@@ -72,7 +77,7 @@ export const authAPI = {
     return api.post('/auth/register/', data);
   },
   branches: () => {
-    console.log('Fetching branches...');
+    console.log('🏢 Fetching branches from:', API_URL);
     return api.get('/auth/branches/');
   },
   updateProfile: (data) => api.put('/auth/update_profile/', data),

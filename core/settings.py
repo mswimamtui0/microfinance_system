@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'payments',
     'notifications',
     'audit',
+    'admin_interface',
+    'colorfield',
+    'django.contrib.admin',
 ]
 
 MIDDLEWARE = [
