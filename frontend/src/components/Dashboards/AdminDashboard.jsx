@@ -11,14 +11,15 @@ import {
   Legend,
   ArcElement,
   PointElement,
-  LineElement
+  LineElement,
+  Filler,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { formatCurrency } from '../../utils/formatters';
 import Loading from '../Common/Loading';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../../api';
 
-// Register ChartJS components
+// Register ChartJS components with Filler
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -28,7 +29,8 @@ ChartJS.register(
   Legend,
   ArcElement,
   PointElement,
-  LineElement
+  LineElement,
+  Filler,
 );
 
 const AdminDashboard = ({ user }) => {
@@ -61,7 +63,6 @@ const AdminDashboard = ({ user }) => {
     return <Loading />;
   }
 
-  // Stats data
   const stats = [
     {
       name: 'Total Portfolio',
@@ -107,8 +108,7 @@ const AdminDashboard = ({ user }) => {
     },
   ];
 
-  // Bar Chart Data - Financial Performance
-  const barChartData = {
+  const chartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
@@ -117,6 +117,7 @@ const AdminDashboard = ({ user }) => {
         backgroundColor: 'rgba(14, 165, 233, 0.8)',
         borderColor: 'rgb(14, 165, 233)',
         borderWidth: 2,
+        fill: false,
       },
       {
         label: 'Collections',
@@ -124,11 +125,11 @@ const AdminDashboard = ({ user }) => {
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderColor: 'rgb(34, 197, 94)',
         borderWidth: 2,
+        fill: false,
       },
     ],
   };
 
-  // Doughnut Chart Data - Portfolio Quality
   const doughnutData = {
     labels: ['Performing', 'Overdue', 'Defaulted'],
     datasets: [
@@ -140,7 +141,6 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  // Line Chart Data - Growth Metrics
   const lineData = {
     labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
     datasets: [
@@ -163,77 +163,64 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  // Bar Chart Options
-  const barOptions = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          font: {
-            size: 12,
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value) {
-            return 'TZS ' + (value / 1000000).toFixed(0) + 'M';
-          },
-        },
-      },
-    },
-  };
-
-  // Doughnut Chart Options
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          padding: 20,
-          font: {
-            size: 12,
-          },
-        },
-      },
-    },
-  };
-
-  // Line Chart Options
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          font: {
-            size: 12,
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
-
+  // Quick Actions - Using buttons that open in new tab
   const quickActions = [
-    { name: 'Manage Users', href: '/admin/users', color: '#8b5cf6' },
-    { name: 'System Settings', href: '/admin/settings', color: '#6b7280' },
-    { name: 'Audit Logs', href: '/admin/audit', color: '#6b7280' },
-    { name: 'Export Reports', href: '/reports/export', color: '#22c55e' },
-    { name: 'Manage Branches', href: '/admin/branches', color: '#0ea5e9' },
-    { name: 'New Loan', href: '/loans/new', color: '#0ea5e9' },
+    { 
+      name: 'Manage Users', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/auth/user/', 
+      color: '#8b5cf6' 
+    },
+    { 
+      name: 'System Settings', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/', 
+      color: '#6b7280' 
+    },
+    { 
+      name: 'Audit Logs', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/audit/auditlog/', 
+      color: '#6b7280' 
+    },
+    { 
+      name: 'Export Reports', 
+      href: '#', 
+      color: '#22c55e',
+      onClick: () => alert('Reports export coming soon!')
+    },
+    { 
+      name: 'Manage Branches', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/branches/branch/', 
+      color: '#0ea5e9' 
+    },
+    { 
+      name: 'New Loan', 
+      href: '/loans/new', 
+      color: '#0ea5e9',
+      internal: true 
+    },
+  ];
+
+  // Admin-only actions for loan products
+  const adminActions = [
+    { 
+      name: 'Add Loan Product', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/add/', 
+      color: '#10b981' 
+    },
+    { 
+      name: 'View Loan Products', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/', 
+      color: '#3b82f6' 
+    },
+    { 
+      name: 'View Customers', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/customers/customer/', 
+      color: '#8b5cf6' 
+    },
+    { 
+      name: 'View All Loans', 
+      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loan/', 
+      color: '#ef4444' 
+    },
   ];
 
   return (
@@ -269,40 +256,7 @@ const AdminDashboard = ({ user }) => {
           </div>
         </div>
       </div>
-// In AdminDashboard.jsx, add this section after the stats
 
-{/* Loan Products Quick Access */}
-<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-  <div className="flex justify-between items-center mb-4">
-    <h3 className="text-lg font-semibold text-gray-900">Loan Products</h3>
-    <Link to="/admin/loan-products" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-      Manage Products →
-    </Link>
-  </div>
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <Link to="/admin/loan-products/add" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-      <span className="text-2xl mr-2">➕</span>
-      <button 
-  onClick={() => window.open('https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/add/', '_blank')}
-  className="...">
-  Add Product
-</button>
-     
-    </Link>
-    <Link to="/admin/loan-products" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-      <span className="text-2xl mr-2">📋</span>
-      <span className="text-sm font-medium">View Products</span>
-    </Link>
-    <Link to="/admin/customers" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-      <span className="text-2xl mr-2">👥</span>
-      <span className="text-sm font-medium">Manage Customers</span>
-    </Link>
-    <Link to="/admin/loans" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-      <span className="text-2xl mr-2">💰</span>
-      <span className="text-sm font-medium">Manage Loans</span>
-    </Link>
-  </div>
-</div>
       {/* Stats Grid */}
       <div style={{
         display: 'grid',
@@ -331,7 +285,7 @@ const AdminDashboard = ({ user }) => {
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Loan Products Quick Access - Admin Only */}
       <div style={{
         background: 'white',
         borderRadius: '12px',
@@ -339,25 +293,46 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Quick Actions</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Loan Products</h3>
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>
+            <a 
+              href="https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#0284c7', textDecoration: 'none' }}
+            >
+              Manage Products →
+            </a>
+          </span>
+        </div>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
           gap: '12px'
         }}>
-          {quickActions.map((action) => (
-            <Link key={action.name} to={action.href} style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              padding: '16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              textDecoration: 'none',
-              color: '#374151',
-              background: 'white',
-              transition: 'background 0.2s'
-            }}>
+          {adminActions.map((action) => (
+            <a
+              key={action.name}
+              href={action.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                color: '#374151',
+                background: 'white',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => e.target.style.background = '#f9fafb'}
+              onMouseLeave={(e) => e.target.style.background = 'white'}
+            >
               <div style={{
                 width: '40px',
                 height: '40px',
@@ -373,18 +348,115 @@ const AdminDashboard = ({ user }) => {
                 {action.name.charAt(0)}
               </div>
               <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* Quick Actions */}
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        padding: '20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        border: '1px solid #e5e7eb'
+      }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Quick Actions</h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: '12px'
+        }}>
+          {quickActions.map((action) => {
+            if (action.internal) {
+              return (
+                <Link
+                  key={action.name}
+                  to={action.href}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '16px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    textDecoration: 'none',
+                    color: '#374151',
+                    background: 'white',
+                    transition: 'background 0.2s'
+                  }}
+                >
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: action.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '18px'
+                  }}>
+                    {action.name.charAt(0)}
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={action.name}
+                href={action.href}
+                target={action.href !== '#' ? '_blank' : '_self'}
+                rel="noopener noreferrer"
+                onClick={action.onClick}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  padding: '16px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  color: '#374151',
+                  background: 'white',
+                  transition: 'background 0.2s',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: action.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '18px'
+                }}>
+                  {action.name.charAt(0)}
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
+                {action.href !== '#' && action.href !== '/loans/new' && (
+                  <span style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>
+                    (Opens in new tab)
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Charts */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1fr',
         gap: '24px'
       }}>
-        {/* Bar Chart */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -401,11 +473,29 @@ const AdminDashboard = ({ user }) => {
             </select>
           </div>
           <div style={{ height: '300px' }}>
-            <Bar data={barChartData} options={barOptions} />
+            <Bar data={chartData} options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: { font: { size: 12 } }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function(value) {
+                      return 'TZS ' + (value / 1000000).toFixed(0) + 'M';
+                    }
+                  }
+                }
+              }
+            }} />
           </div>
         </div>
 
-        {/* Doughnut Chart */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -415,7 +505,19 @@ const AdminDashboard = ({ user }) => {
         }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Portfolio Quality</h3>
           <div style={{ height: '250px' }}>
-            <Doughnut data={doughnutData} options={doughnutOptions} />
+            <Doughnut data={doughnutData} options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    padding: 20,
+                    font: { size: 12 }
+                  }
+                }
+              }
+            }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
             <div>
@@ -434,7 +536,7 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Line Chart - Growth Metrics */}
+      {/* Line Chart */}
       <div style={{
         background: 'white',
         borderRadius: '12px',
@@ -444,7 +546,19 @@ const AdminDashboard = ({ user }) => {
       }}>
         <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Growth Metrics</h3>
         <div style={{ height: '250px' }}>
-          <Line data={lineData} options={lineOptions} />
+          <Line data={lineData} options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: { font: { size: 12 } }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }} />
         </div>
       </div>
 
@@ -454,7 +568,6 @@ const AdminDashboard = ({ user }) => {
         gridTemplateColumns: '1fr 1fr',
         gap: '24px'
       }}>
-        {/* Recent Loans */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -497,7 +610,6 @@ const AdminDashboard = ({ user }) => {
           ))}
         </div>
 
-        {/* Recent Customers */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
