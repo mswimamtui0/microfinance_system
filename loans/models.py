@@ -214,17 +214,31 @@ class Loan(models.Model):
         return f"{self.loan_no} - {self.customer.full_name}"
     
     def calculate_total_interest(self):
-        """Calculate total interest based on method"""
-        if self.interest_method == 'flat':
-            return self.principal * (self.interest_rate / 100) * self.term_months
-        else:  # declining balance
-            # Simplified declining balance
-            monthly_rate = self.interest_rate / 100 / 12
-            monthly_payment = self.principal * monthly_rate * (1 + monthly_rate) ** self.term_months
-            monthly_payment /= (1 + monthly_rate) ** self.term_months - 1
-            total_payment = monthly_payment * self.term_months
-            return total_payment - self.principal
+    """Calculate total interest based on method"""
+    principal = Decimal(str(self.principal))
+    rate = Decimal(str(self.interest_rate)) / Decimal('100')
+    term = Decimal(str(self.term_months))
     
+    if self.interest_method == 'flat':
+        # Flat rate: Principal × Rate × Term
+        return principal * rate * term
+    else:
+        # Declining balance
+        monthly_rate = rate / Decimal('12')
+        if monthly_rate == 0:
+            return Decimal('0')
+        
+        # Calculate monthly payment using annuity formula
+        # P = (r * PV) / (1 - (1 + r)^-n)
+        one_plus_r = Decimal('1') + monthly_rate
+        denominator = Decimal('1') - (one_plus_r ** (-term))
+        monthly_payment = (monthly_rate * principal) / denominator
+        total_payment = monthly_payment * term
+        total_interest = total_payment - principal
+        
+        return total_interest.quantize(Decimal('0.01'))
+
+        
     def get_total_payable(self):
         """Calculate total amount to repay"""
         self.total_interest = self.calculate_total_interest()
