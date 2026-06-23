@@ -14,6 +14,7 @@ class LoanProduct(models.Model):
         ('daily', 'Daily'),
         ('weekly', 'Weekly'),
         ('monthly', 'Monthly'),
+        ('custom', 'Custom'),
     ]
     
     product_name = models.CharField(max_length=100)
@@ -40,11 +41,22 @@ class LoanProduct(models.Model):
     min_term_months = models.PositiveIntegerField(default=1)
     max_term_months = models.PositiveIntegerField(default=24)
     
-    # Repayment
+    # Repayment Settings
     repayment_frequency = models.CharField(
         max_length=10, 
         choices=FREQUENCY_CHOICES, 
         default='monthly'
+    )
+    repayment_percentage = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=10.00,
+        help_text="Percentage of total loan to pay per period"
+    )
+    custom_frequency_days = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text="Number of days between payments for custom frequency"
     )
     
     # Fees
@@ -54,17 +66,38 @@ class LoanProduct(models.Model):
         default=0,
         help_text="Percentage of loan amount"
     )
-    late_penalty_rate = models.DecimalField(
+    
+    # Penalty Settings
+    penalty_rate = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
-        default=2,
-        help_text="Daily penalty percentage"
+        default=2.0,
+        help_text="Penalty percentage per overdue period"
     )
+    grace_period_days = models.PositiveIntegerField(
+        default=0,
+        help_text="Days after due date before penalty starts"
+    )
+    max_overdue_days = models.PositiveIntegerField(
+        default=30,
+        help_text="Days after which loan is marked as defaulted"
+    )
+    
+    # Early Repayment
+    allow_early_repayment = models.BooleanField(default=True)
+    early_repayment_fee = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Fee percentage for early repayment"
+    )
+    
+    # Guarantor
+    requires_guarantor = models.BooleanField(default=True)
+    requires_collateral = models.BooleanField(default=False)
     
     # Status
     is_active = models.BooleanField(default=True)
-    requires_guarantor = models.BooleanField(default=True)
-    requires_collateral = models.BooleanField(default=False)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,6 +109,22 @@ class LoanProduct(models.Model):
     
     def __str__(self):
         return f"{self.product_name} ({self.interest_rate}%)"
+    
+    def get_frequency_days(self):
+        """Get the number of days between payments"""
+        if self.repayment_frequency == 'daily':
+            return 1
+        elif self.repayment_frequency == 'weekly':
+            return 7
+        elif self.repayment_frequency == 'monthly':
+            return 30
+        elif self.repayment_frequency == 'custom':
+            return self.custom_frequency_days or 30
+        return 30
+    
+    def get_repayment_percentage(self):
+        """Get the percentage to pay per period"""
+        return self.repayment_percentage / 100
 
 
 class Loan(models.Model):
@@ -164,60 +213,38 @@ class Loan(models.Model):
     def __str__(self):
         return f"{self.loan_no} - {self.customer.full_name}"
     
-    def calculate_schedule(self):
-        """Generate repayment schedule using the loan calculator"""
-        from .utils.calculations import LoanCalculator
-        
-        calculator = LoanCalculator(
-            principal=self.principal,
-            annual_interest_rate=float(self.interest_rate),
-            term_months=self.term_months,
-            disbursement_date=self.disbursement_date or self.application_date,
-            repayment_frequency=self.repayment_frequency
-        )
-        
-        schedule_data = calculator.generate_summary(
-            method=self.interest_method
-        )
-        
-        return schedule_data
+    def calculate_total_interest(self):
+        """Calculate total interest based on method"""
+        if self.interest_method == 'flat':
+            return self.principal * (self.interest_rate / 100) * self.term_months
+        else:  # declining balance
+            # Simplified declining balance
+            monthly_rate = self.interest_rate / 100 / 12
+            monthly_payment = self.principal * monthly_rate * (1 + monthly_rate) ** self.term_months
+            monthly_payment /= (1 + monthly_rate) ** self.term_months - 1
+            total_payment = monthly_payment * self.term_months
+            return total_payment - self.principal
     
-    def update_outstanding(self):
-        """Update outstanding balance based on payments"""
-        total_paid = self.payments.filter(status='completed').aggregate(
-            total=models.Sum('amount_paid')
-        )['total'] or 0
-        
-        self.amount_paid = total_paid
-        self.outstanding_balance = self.total_payable - total_paid
-        
-        if self.outstanding_balance <= 0:
-            self.status = 'paid'
-            self.closed_date = timezone.now().date()
-        
-        self.save()
+    def get_total_payable(self):
+        """Calculate total amount to repay"""
+        self.total_interest = self.calculate_total_interest()
+        self.total_payable = self.principal + self.total_interest
+        return self.total_payable
     
-    def check_overdue(self):
-        """Check if loan has overdue payments"""
-        from django.utils import timezone
-        today = timezone.now().date()
-        
-        if self.status in ['paid', 'defaulted', 'written_off', 'rejected']:
-            return
-        
-        overdue_schedules = self.schedules.filter(
-            status__in=['pending', 'overdue'],
-            due_date__lt=today
-        )
-        
-        if overdue_schedules.exists():
-            self.is_overdue = True
-            self.days_overdue = (today - overdue_schedules.first().due_date).days
-        else:
-            self.is_overdue = False
-            self.days_overdue = 0
-        
-        self.save()
+    def get_payment_period_days(self):
+        """Get the number of days between payments"""
+        return self.product.get_frequency_days()
+    
+    def get_number_of_payments(self):
+        """Get the total number of payments"""
+        total_days = self.term_months * 30
+        period_days = self.get_payment_period_days()
+        return total_days // period_days
+    
+    def get_payment_amount(self):
+        """Get the amount due per payment period"""
+        percentage = self.product.get_repayment_percentage()
+        return self.total_payable * percentage
 
 
 class LoanSchedule(models.Model):
@@ -260,14 +287,49 @@ class LoanSchedule(models.Model):
         from django.utils import timezone
         return self.status in ['pending', 'partial'] and self.due_date < timezone.now().date()
     
-    def mark_as_paid(self, amount=None):
+    def calculate_penalty(self, payment_date):
+        """Calculate penalty for this installment"""
+        if payment_date <= self.due_date:
+            return 0
+        
+        days_overdue = (payment_date - self.due_date).days
+        product = self.loan.product
+        
+        # Check grace period
+        if days_overdue <= product.grace_period_days:
+            return 0
+        
+        # Calculate penalty
+        penalty_rate = product.penalty_rate / 100
+        period_days = self.loan.get_payment_period_days()
+        overdue_periods = days_overdue / period_days
+        penalty = self.total_due * penalty_rate * overdue_periods
+        
+        return penalty
+    
+    def mark_as_paid(self, amount=None, payment_date=None):
         """Mark schedule as paid"""
         from django.utils import timezone
+        
+        if payment_date is None:
+            payment_date = timezone.now().date()
         
         if amount is None:
             amount = self.total_due
         
-        self.amount_paid = amount
-        self.status = 'paid' if amount >= self.total_due else 'partial'
-        self.paid_date = timezone.now().date()
+        # Calculate penalty
+        penalty = self.calculate_penalty(payment_date)
+        self.penalty_amount = penalty
+        
+        # Determine total due with penalty
+        total_with_penalty = self.total_due + penalty
+        
+        if amount >= total_with_penalty:
+            self.amount_paid = amount
+            self.status = 'paid'
+            self.paid_date = payment_date
+        else:
+            self.amount_paid = amount
+            self.status = 'partial'
+        
         self.save()
