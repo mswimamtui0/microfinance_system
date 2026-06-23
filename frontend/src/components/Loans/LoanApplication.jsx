@@ -12,6 +12,7 @@ const LoanApplication = ({ onClose }) => {
   });
 
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [calculations, setCalculations] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const queryClient = useQueryClient();
 
@@ -48,8 +49,6 @@ const LoanApplication = ({ onClose }) => {
       const errorData = error.response?.data;
       
       if (errorData) {
-        console.log('Full error data:', JSON.stringify(errorData, null, 2));
-        
         if (typeof errorData === 'string') {
           errorMessage = errorData;
         } else if (errorData.error) {
@@ -58,8 +57,6 @@ const LoanApplication = ({ onClose }) => {
           errorMessage = errorData.message;
         } else if (errorData.detail) {
           errorMessage = errorData.detail;
-        } else if (errorData.non_field_errors) {
-          errorMessage = errorData.non_field_errors.join(', ');
         } else {
           const fieldErrors = [];
           Object.keys(errorData).forEach(key => {
@@ -77,7 +74,6 @@ const LoanApplication = ({ onClose }) => {
       }
       
       toast.error(errorMessage);
-      console.error('Full error message:', errorMessage);
     },
   });
 
@@ -87,12 +83,81 @@ const LoanApplication = ({ onClose }) => {
     setSelectedProduct(product);
     setFormData({ ...formData, product: productId });
     setValidationErrors({});
+    calculateLoan(product);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     setValidationErrors({});
+    
+    // Recalculate when principal or term changes
+    if (name === 'principal' || name === 'term_months') {
+      calculateLoan(selectedProduct);
+    }
+  };
+
+  const calculateLoan = (product) => {
+    if (!product || !formData.principal || !formData.term_months) {
+      setCalculations(null);
+      return;
+    }
+
+    const principal = parseFloat(formData.principal);
+    const term = parseInt(formData.term_months);
+    
+    if (isNaN(principal) || isNaN(term) || principal <= 0 || term <= 0) {
+      setCalculations(null);
+      return;
+    }
+
+    // Calculate interest
+    let totalInterest = 0;
+    if (product.interest_method === 'flat') {
+      totalInterest = principal * (product.interest_rate / 100) * term;
+    } else {
+      // Declining balance (simplified)
+      const monthlyRate = product.interest_rate / 100 / 12;
+      const monthlyPayment = principal * monthlyRate * Math.pow(1 + monthlyRate, term);
+      const totalPayment = monthlyPayment / (Math.pow(1 + monthlyRate, term) - 1) * term;
+      totalInterest = totalPayment - principal;
+    }
+
+    const totalPayable = principal + totalInterest;
+    const totalDays = term * 30;
+    const dailyAmount = totalPayable / totalDays;
+    const weeklyAmount = dailyAmount * 7;
+    const monthlyAmount = dailyAmount * 30;
+    const hourlyAmount = dailyAmount / 24;
+    const minuteAmount = hourlyAmount / 60;
+    const secondAmount = minuteAmount / 60;
+    
+    // Get frequency details
+    const frequencyMap = {
+      daily: { label: 'Daily', period: 1, payment: dailyAmount },
+      weekly: { label: 'Weekly', period: 7, payment: weeklyAmount },
+      monthly: { label: 'Monthly', period: 30, payment: monthlyAmount },
+      custom: { label: 'Custom', period: product.custom_frequency_days || 30, payment: dailyAmount * (product.custom_frequency_days || 30) }
+    };
+    
+    const freq = frequencyMap[product.repayment_frequency] || frequencyMap.monthly;
+    const paymentAmount = freq.payment;
+    const totalPayments = Math.ceil(totalPayable / paymentAmount);
+
+    setCalculations({
+      totalInterest: totalInterest.toFixed(2),
+      totalPayable: totalPayable.toFixed(2),
+      dailyAmount: dailyAmount.toFixed(2),
+      weeklyAmount: weeklyAmount.toFixed(2),
+      monthlyAmount: monthlyAmount.toFixed(2),
+      hourlyAmount: hourlyAmount.toFixed(2),
+      minuteAmount: minuteAmount.toFixed(2),
+      secondAmount: secondAmount.toFixed(4),
+      paymentAmount: paymentAmount.toFixed(2),
+      totalPayments: totalPayments,
+      frequency: freq.label,
+      period: freq.period,
+    });
   };
 
   const handleSubmit = (e) => {
@@ -170,7 +235,7 @@ const LoanApplication = ({ onClose }) => {
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
         
-        <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+        <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900">New Loan Application</h2>
             <button
@@ -255,9 +320,13 @@ const LoanApplication = ({ onClose }) => {
                     <span className="text-gray-500">Term Range:</span>
                     <span className="ml-2 font-medium">{selectedProduct.min_term_months} - {selectedProduct.max_term_months} months</span>
                   </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-500">Repayment Frequency:</span>
+                  <div>
+                    <span className="text-gray-500">Frequency:</span>
                     <span className="ml-2 font-medium capitalize">{selectedProduct.repayment_frequency}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Penalty Rate:</span>
+                    <span className="ml-2 font-medium">{selectedProduct.penalty_rate}%</span>
                   </div>
                 </div>
               </div>
@@ -319,6 +388,69 @@ const LoanApplication = ({ onClose }) => {
               )}
             </div>
 
+            {/* Real-Time Calculations */}
+            {calculations && (
+              <div className="bg-blue-50 rounded-lg p-4 space-y-2 border border-blue-200">
+                <h4 className="font-medium text-blue-900">Loan Calculations</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-blue-700">Total Interest:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.totalInterest}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Total Payable:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.totalPayable}</span>
+                  </div>
+                  <div className="col-span-2 border-t border-blue-200 pt-2 mt-2">
+                    <span className="text-blue-700 font-medium">Repayment Details:</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Frequency:</span>
+                    <span className="ml-2 font-medium text-blue-900">{calculations.frequency}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Payment Amount:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.paymentAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Total Payments:</span>
+                    <span className="ml-2 font-medium text-blue-900">{calculations.totalPayments}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Period:</span>
+                    <span className="ml-2 font-medium text-blue-900">{calculations.period} days</span>
+                  </div>
+                  <div className="col-span-2 border-t border-blue-200 pt-2 mt-2">
+                    <span className="text-blue-700 font-medium">Real-Time Breakdown:</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Second:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.secondAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Minute:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.minuteAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Hour:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.hourlyAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Day:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.dailyAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Week:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.weeklyAmount}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Per Month:</span>
+                    <span className="ml-2 font-medium text-blue-900">TZS {calculations.monthlyAmount}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Error Display */}
             {createLoanMutation.error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -328,11 +460,6 @@ const LoanApplication = ({ onClose }) => {
                    createLoanMutation.error.response?.data?.detail ||
                    'Failed to create loan. Please check all fields and try again.'}
                 </p>
-                {createLoanMutation.error.response?.data && (
-                  <pre className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded overflow-auto max-h-40">
-                    {JSON.stringify(createLoanMutation.error.response.data, null, 2)}
-                  </pre>
-                )}
               </div>
             )}
 
