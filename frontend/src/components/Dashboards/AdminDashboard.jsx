@@ -282,7 +282,12 @@ const AdminDashboard = ({ user }) => {
   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
     <Link to="/admin/loan-products/add" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
       <span className="text-2xl mr-2">➕</span>
-      <span className="text-sm font-medium">Add Product</span>
+      <button 
+  onClick={() => window.open('https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/add/', '_blank')}
+  className="...">
+  Add Product
+</button>
+     
     </Link>
     <Link to="/admin/loan-products" className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
       <span className="text-2xl mr-2">📋</span>
