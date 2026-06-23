@@ -55,43 +55,39 @@ const Collections = () => {
   const stats = [
     { 
       name: 'Due Today', 
-      count: allSchedules.filter(c => c.due_date === todayStr).length, 
+      count: allSchedules.filter(c => c.due_date === todayStr).length,
+      total: allSchedules.filter(c => c.due_date === todayStr).reduce((sum, c) => sum + c.total_due, 0),
       color: '#f59e0b',
       icon: '📅'
     },
     { 
       name: 'Due Tomorrow', 
-      count: allSchedules.filter(c => c.due_date === tomorrowStr).length, 
+      count: allSchedules.filter(c => c.due_date === tomorrowStr).length,
+      total: allSchedules.filter(c => c.due_date === tomorrowStr).reduce((sum, c) => sum + c.total_due, 0),
       color: '#3b82f6',
       icon: '📆'
     },
     { 
       name: 'Overdue', 
-      count: allSchedules.filter(c => c.status === 'overdue').length, 
+      count: allSchedules.filter(c => c.status === 'overdue').length,
+      total: allSchedules.filter(c => c.status === 'overdue').reduce((sum, c) => sum + c.total_due, 0),
       color: '#ef4444',
       icon: '⚠️'
     },
     { 
       name: 'Defaulters', 
-      count: allLoans.filter(l => l.status === 'defaulted').length, 
+      count: allLoans.filter(l => l.status === 'defaulted').length,
+      total: allLoans.filter(l => l.status === 'defaulted').reduce((sum, l) => sum + l.outstanding_balance, 0),
       color: '#dc2626',
       icon: '🚫'
     },
   ];
 
-  const totalDueToday = allSchedules
-    .filter(c => c.due_date === todayStr)
-    .reduce((sum, c) => sum + c.total_due, 0);
-
-  const totalOverdue = allSchedules
-    .filter(c => c.status === 'overdue')
-    .reduce((sum, c) => sum + c.total_due, 0);
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-900">Collections</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Collections Dashboard</h1>
         <div className="flex gap-2">
           <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
             Export Report
@@ -117,6 +113,7 @@ const Collections = () => {
               <div>
                 <p style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>{stat.name}</p>
                 <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>{stat.count}</p>
+                <p style={{ fontSize: '12px', color: '#6b7280' }}>{formatCurrency(stat.total)}</p>
               </div>
               <span style={{ fontSize: '32px' }}>{stat.icon}</span>
             </div>
@@ -124,29 +121,35 @@ const Collections = () => {
         ))}
       </div>
 
-      {/* Collection Summary */}
+      {/* Real-Time Collection Summary */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '16px'
+        background: 'white',
+        borderRadius: '12px',
+        padding: '16px',
+        border: '1px solid #e5e7eb'
       }}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Real-Time Collection Status</h3>
         <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '16px',
-          border: '1px solid #e5e7eb'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '16px'
         }}>
-          <p style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>Total Due Today</p>
-          <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>{formatCurrency(totalDueToday)}</p>
-        </div>
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '16px',
-          border: '1px solid #e5e7eb'
-        }}>
-          <p style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>Total Overdue Amount</p>
-          <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#ef4444' }}>{formatCurrency(totalOverdue)}</p>
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-gray-500">Today's Collections</p>
+            <p className="text-xl font-bold text-green-600">{formatCurrency(0)}</p>
+          </div>
+          <div className="text-center p-3 bg-yellow-50 rounded-lg">
+            <p className="text-sm text-gray-500">Expected Today</p>
+            <p className="text-xl font-bold text-yellow-600">{formatCurrency(stats[0].total)}</p>
+          </div>
+          <div className="text-center p-3 bg-red-50 rounded-lg">
+            <p className="text-sm text-gray-500">Overdue Amount</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrency(stats[2].total)}</p>
+          </div>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-500">Collection Rate</p>
+            <p className="text-xl font-bold text-blue-600">0%</p>
+          </div>
         </div>
       </div>
 
@@ -248,6 +251,8 @@ const Collections = () => {
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Installment</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Due Date</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Amount</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Penalty</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Total</th>
                 <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Status</th>
                 <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Action</th>
               </tr>
@@ -284,6 +289,12 @@ const Collections = () => {
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600' }}>
                     {formatCurrency(item.total_due)}
+                  </td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', color: '#ef4444' }}>
+                    {formatCurrency(item.penalty_amount || 0)}
+                  </td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatCurrency((item.total_due || 0) + (item.penalty_amount || 0))}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     <span style={{
