@@ -9,11 +9,8 @@ from .models import Loan, LoanProduct, LoanSchedule
 from .serializers import LoanSerializer, LoanProductSerializer
 from .utils.calculations import LoanCalculator, RepaymentScheduleGenerator
 from customers.models import Customer
+from decimal import Decimal
 import logging
-from .models import Loan, LoanProduct, LoanSchedule
-from .serializers import LoanSerializer, LoanProductSerializer, LoanScheduleSerializer
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -83,20 +80,20 @@ class LoanViewSet(viewsets.ModelViewSet):
                     'error': 'Customer does not exist'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Validate amount
+            # Validate amount - convert to Decimal
             try:
-                principal = float(data['principal'])
-                if principal < product.min_amount:
+                principal = Decimal(str(data['principal']))
+                if principal < Decimal(str(product.min_amount)):
                     return Response({
                         'error': f'Principal amount must be at least {product.min_amount}'
                     }, status=status.HTTP_400_BAD_REQUEST)
-                if principal > product.max_amount:
+                if principal > Decimal(str(product.max_amount)):
                     return Response({
                         'error': f'Principal amount cannot exceed {product.max_amount}'
                     }, status=status.HTTP_400_BAD_REQUEST)
-            except ValueError:
+            except (ValueError, TypeError) as e:
                 return Response({
-                    'error': 'Invalid principal amount'
+                    'error': f'Invalid principal amount: {str(e)}'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Validate term
@@ -127,14 +124,14 @@ class LoanViewSet(viewsets.ModelViewSet):
             if hasattr(user, 'branch') and user.branch:
                 branch = user.branch
             
-            # Create loan with calculations
+            # Create loan with Decimal values
             loan = Loan(
                 loan_no=f"LN-{timezone.now().strftime('%Y%m%d')}-{timezone.now().microsecond}",
                 customer=customer,
                 product=product,
                 branch=branch,
                 principal=principal,
-                interest_rate=product.interest_rate,
+                interest_rate=Decimal(str(product.interest_rate)),
                 term_months=term_months,
                 repayment_frequency=product.repayment_frequency,
                 interest_method=product.interest_method,
@@ -145,19 +142,23 @@ class LoanViewSet(viewsets.ModelViewSet):
             
             # Calculate total payable
             loan.total_interest = loan.calculate_total_interest()
-            loan.total_payable = loan.get_total_payable()
+            loan.total_payable = loan.principal + loan.total_interest
             loan.outstanding_balance = loan.total_payable
             loan.save()
             
             logger.info(f"Loan created: {loan.loan_no}")
             
             # Generate repayment schedule
-            schedule_generator = RepaymentScheduleGenerator()
-            schedule_generator.generate_schedule(loan)
+            try:
+                schedule_generator = RepaymentScheduleGenerator()
+                schedule_generator.generate_schedule(loan)
+                logger.info(f"Schedule generated for loan: {loan.loan_no}")
+            except Exception as e:
+                logger.error(f"Error generating schedule: {str(e)}")
+                # Still return the loan even if schedule generation fails
+                # The schedule can be generated later
             
-            # Update loan with schedule info
-            loan.save()
-            
+            # Get serialized loan
             serializer = self.get_serializer(loan)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
@@ -193,7 +194,10 @@ class LoanViewSet(viewsets.ModelViewSet):
         
         if payment_date:
             from datetime import datetime
-            payment_date = datetime.strptime(payment_date, '%Y-%m-%d').date()
+            try:
+                payment_date = datetime.strptime(payment_date, '%Y-%m-%d').date()
+            except ValueError:
+                payment_date = None
         
         calculator = LoanCalculator(loan)
         result = calculator.calculate_early_repayment(payment_date)
@@ -242,7 +246,6 @@ class LoanViewSet(viewsets.ModelViewSet):
         loan.save()
         
         # Update schedules
-        calculator = LoanCalculator(loan)
         schedules = loan.schedules.all()
         period_days = loan.product.get_frequency_days()
         
@@ -260,32 +263,33 @@ class LoanViewSet(viewsets.ModelViewSet):
         from .serializers import LoanScheduleSerializer
         serializer = LoanScheduleSerializer(schedules, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def calculate_penalty(self, request, pk=None):
+        """Calculate penalty for overdue loan"""
+        loan = self.get_object()
+        data = request.data
+        days_overdue = data.get('days_overdue', loan.days_overdue)
+        overdue_amount = data.get('overdue_amount', float(loan.outstanding_balance))
+        
+        calculator = LoanCalculator(loan)
+        penalty = calculator.calculate_penalty(
+            overdue_amount=overdue_amount,
+            days_overdue=days_overdue,
+            penalty_rate=float(loan.product.penalty_rate)
+        )
+        
+        return Response({'penalty_amount': penalty})
 
-
-        # Add this class to loans/views.py
 
 class LoanProductViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for Loan Products
-    """
     queryset = LoanProduct.objects.all()
     serializer_class = LoanProductSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        
-        # Filter by active status
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        
-        # Search by name or code
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(product_name__icontains=search) |
-                Q(product_code__icontains=search)
-            )
-        
         return queryset
