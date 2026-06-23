@@ -10,6 +10,7 @@ class LoanCalculator:
     """
     Professional Loan Calculation Engine for Microfinance.
     Supports flexible repayment frequencies and real-time calculations.
+    All calculations use Decimal for precision.
     """
     
     def __init__(self, loan):
@@ -19,7 +20,7 @@ class LoanCalculator:
         self.loan = loan
         self.principal = Decimal(str(loan.principal))
         self.annual_rate = Decimal(str(loan.interest_rate)) / Decimal('100')
-        self.term_months = loan.term_months
+        self.term_months = Decimal(str(loan.term_months))
         self.disbursement_date = loan.disbursement_date or loan.application_date
         self.frequency = loan.repayment_frequency
         self.total_payable = Decimal(str(loan.total_payable))
@@ -28,42 +29,48 @@ class LoanCalculator:
         self.product = loan.product
         self.penalty_rate = Decimal(str(self.product.penalty_rate)) / Decimal('100')
         self.grace_period = self.product.grace_period_days
-        self.percentage = self.product.get_repayment_percentage()
+        self.percentage = Decimal(str(self.product.get_repayment_percentage()))
         
     def get_total_days(self):
         """Get total days for the loan term"""
-        return self.term_months * 30
+        return self.term_months * Decimal('30')
     
     def get_period_days(self):
         """Get days per payment period"""
         if self.frequency == 'daily':
-            return 1
+            return Decimal('1')
         elif self.frequency == 'weekly':
-            return 7
+            return Decimal('7')
         elif self.frequency == 'monthly':
-            return 30
+            return Decimal('30')
         elif self.frequency == 'custom':
-            return self.product.custom_frequency_days or 30
-        return 30
+            return Decimal(str(self.product.custom_frequency_days or 30))
+        return Decimal('30')
     
     def get_total_payments(self):
         """Get total number of payments"""
         total_days = self.get_total_days()
         period_days = self.get_period_days()
-        return total_days // period_days
+        if period_days == 0:
+            return 0
+        return int(total_days // period_days)
     
     def get_payment_amount(self):
         """Get amount due per payment period"""
         percentage = self.percentage
-        return self.total_payable * Decimal(str(percentage))
+        return self.total_payable * percentage
     
     def get_daily_amount(self):
         """Get daily payment amount"""
-        return self.total_payable / Decimal(str(self.get_total_days()))
+        total_days = self.get_total_days()
+        if total_days == 0:
+            return Decimal('0')
+        return self.total_payable / total_days
     
     def get_second_amount(self):
         """Get per second payment amount"""
-        return self.daily_amount() / Decimal('86400')
+        daily = self.get_daily_amount()
+        return daily / Decimal('86400')
     
     def get_minute_amount(self):
         """Get per minute payment amount"""
@@ -97,7 +104,8 @@ class LoanCalculator:
             return schedule
         
         current_date = self.disbursement_date
-        period_days = self.get_period_days()
+        period_days = int(self.get_period_days())
+        total_payable = self.total_payable
         
         for i in range(total_payments):
             # Calculate due date
@@ -105,20 +113,24 @@ class LoanCalculator:
             
             # For last payment, adjust to match total
             if i == total_payments - 1:
-                remaining = self.total_payable - (payment_amount * Decimal(str(total_payments - 1)))
+                remaining = total_payable - (payment_amount * Decimal(str(total_payments - 1)))
                 amount = remaining
             else:
                 amount = payment_amount
             
+            # Calculate principal and interest portions (approximate)
+            principal_portion = amount * Decimal('0.7')
+            interest_portion = amount * Decimal('0.3')
+            
             schedule.append({
                 'installment_no': i + 1,
                 'due_date': due_date,
-                'principal_amount': amount * Decimal('0.7'),  # Approximate principal portion
-                'interest_amount': amount * Decimal('0.3'),   # Approximate interest portion
+                'principal_amount': principal_portion,
+                'interest_amount': interest_portion,
                 'penalty_amount': Decimal('0'),
                 'total_due': amount,
                 'status': 'pending',
-                'balance_after': self.total_payable - (amount * Decimal(str(i + 1)))
+                'balance_after': total_payable - (amount * Decimal(str(i + 1)))
             })
             
             current_date = due_date
@@ -128,6 +140,7 @@ class LoanCalculator:
     def calculate_penalty(self, due_date, payment_date):
         """
         Calculate penalty for late payment.
+        Returns Decimal with 2 decimal places.
         """
         if payment_date <= due_date:
             return Decimal('0')
@@ -140,14 +153,19 @@ class LoanCalculator:
         
         # Calculate penalty
         period_days = self.get_period_days()
-        overdue_periods = days_overdue / period_days
-        penalty = self.get_payment_amount() * self.penalty_rate * Decimal(str(overdue_periods))
+        if period_days == 0:
+            return Decimal('0')
+        
+        overdue_periods = Decimal(str(days_overdue)) / period_days
+        payment_amount = self.get_payment_amount()
+        penalty = payment_amount * self.penalty_rate * overdue_periods
         
         return penalty.quantize(Decimal('0.01'))
     
     def get_current_status(self, as_of_date=None):
         """
         Get the current loan status including real-time amounts.
+        Returns a dictionary with all status information.
         """
         if as_of_date is None:
             as_of_date = date.today()
@@ -156,8 +174,12 @@ class LoanCalculator:
         elapsed_days = (as_of_date - self.disbursement_date).days
         
         # Calculate expected payments
-        period_days = self.get_period_days()
-        payments_due = elapsed_days // period_days
+        period_days = int(self.get_period_days())
+        if period_days > 0:
+            payments_due = elapsed_days // period_days
+        else:
+            payments_due = 0
+        
         expected_paid = self.get_payment_amount() * Decimal(str(payments_due))
         
         # Calculate daily amounts
@@ -179,13 +201,20 @@ class LoanCalculator:
             days_overdue = (as_of_date - next_due_date).days
             penalty = self.calculate_penalty(next_due_date, as_of_date)
         
+        # Calculate amount paid
+        amount_paid = Decimal(str(self.loan.amount_paid))
+        outstanding = self.total_payable - amount_paid
+        
+        # Get total days
+        total_days = int(self.get_total_days())
+        
         return {
             'loan_id': self.loan.id,
             'loan_no': self.loan.loan_no,
             'principal': self.principal,
             'total_payable': self.total_payable,
-            'amount_paid': self.loan.amount_paid,
-            'outstanding_balance': self.total_payable - self.loan.amount_paid,
+            'amount_paid': amount_paid,
+            'outstanding_balance': outstanding,
             
             'time_elapsed': {
                 'days': elapsed_days,
@@ -209,7 +238,8 @@ class LoanCalculator:
             'penalty': penalty,
             
             'status': self.loan.status,
-            'maturity_date': self.disbursement_date + timedelta(days=self.get_total_days()),
+            'maturity_date': self.disbursement_date + timedelta(days=total_days),
+            'total_days': total_days,
         }
     
     def calculate_early_repayment(self, payment_date=None):
@@ -222,7 +252,7 @@ class LoanCalculator:
             payment_date = date.today()
         
         total_payable = self.total_payable
-        amount_paid = self.loan.amount_paid
+        amount_paid = Decimal(str(self.loan.amount_paid))
         
         # Check if any penalty applies
         total_penalty = Decimal('0')
@@ -234,17 +264,22 @@ class LoanCalculator:
                 penalty = self.calculate_penalty(schedule.due_date, payment_date)
                 total_penalty += penalty
         
-        final_amount = total_payable - amount_paid + total_penalty
+        outstanding = total_payable - amount_paid
+        final_amount = outstanding + total_penalty
+        
+        early_repayment_fee = Decimal(str(self.product.early_repayment_fee or 0))
+        fee_amount = final_amount * (early_repayment_fee / Decimal('100'))
+        total_to_pay = final_amount + fee_amount
         
         return {
             'total_payable': total_payable,
             'amount_paid': amount_paid,
-            'outstanding': total_payable - amount_paid,
+            'outstanding': outstanding,
             'penalty': total_penalty,
             'final_amount': final_amount,
-            'early_repayment_fee': self.product.early_repayment_fee,
-            'fee_amount': final_amount * (Decimal(str(self.product.early_repayment_fee)) / Decimal('100')),
-            'total_to_pay': final_amount + (final_amount * (Decimal(str(self.product.early_repayment_fee)) / Decimal('100'))),
+            'early_repayment_fee': early_repayment_fee,
+            'fee_amount': fee_amount,
+            'total_to_pay': total_to_pay,
             'message': 'Loan will be fully paid after this payment'
         }
     
@@ -262,7 +297,7 @@ class LoanCalculator:
                 'customer': str(self.loan.customer),
                 'product': str(self.loan.product),
                 'principal': self.principal,
-                'interest_rate': self.annual_rate * 100,
+                'interest_rate': self.annual_rate * Decimal('100'),
                 'term_months': self.term_months,
                 'total_interest': self.loan.total_interest,
                 'total_payable': self.total_payable,
@@ -331,7 +366,7 @@ class RepaymentScheduleGenerator:
             if schedule.due_date < today:
                 penalty = calculator.calculate_penalty(schedule.due_date, today)
                 schedule.penalty_amount = penalty
-                schedule.total_due = schedule.total_due + penalty
+                schedule.total_due = Decimal(str(schedule.total_due)) + penalty
                 schedule.status = 'overdue'
                 schedule.save()
                 total_penalty += penalty
