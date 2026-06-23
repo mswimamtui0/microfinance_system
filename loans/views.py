@@ -33,6 +33,19 @@ class LoanViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(branch_id=branch_id)
         
         return queryset
+
+        # In loans/views.py
+from rest_framework import viewsets
+from .models import Loan, LoanProduct
+from .serializers import LoanSerializer, LoanProductSerializer
+
+class LoanViewSet(viewsets.ModelViewSet):
+    queryset = Loan.objects.all()
+    serializer_class = LoanSerializer
+
+class LoanProductViewSet(viewsets.ModelViewSet):  # Add this
+    queryset = LoanProduct.objects.all()
+    serializer_class = LoanProductSerializer
     
     @transaction.atomic
     def create(self, request, *args, **kwargs):
