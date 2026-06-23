@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from django.utils import timezone
+
 
 class LoanProduct(models.Model):
     INTEREST_METHOD_CHOICES = [
@@ -23,22 +25,41 @@ class LoanProduct(models.Model):
     max_amount = models.DecimalField(max_digits=12, decimal_places=2)
     
     # Interest
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, 
-                                       validators=[MinValueValidator(0), MaxValueValidator(100)])
-    interest_method = models.CharField(max_length=20, choices=INTEREST_METHOD_CHOICES, default='declining')
+    interest_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
+    interest_method = models.CharField(
+        max_length=20, 
+        choices=INTEREST_METHOD_CHOICES, 
+        default='declining'
+    )
     
     # Term
     min_term_months = models.PositiveIntegerField(default=1)
     max_term_months = models.PositiveIntegerField(default=24)
     
     # Repayment
-    repayment_frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='monthly')
+    repayment_frequency = models.CharField(
+        max_length=10, 
+        choices=FREQUENCY_CHOICES, 
+        default='monthly'
+    )
     
     # Fees
-    processing_fee = models.DecimalField(max_digits=5, decimal_places=2, default=0, 
-                                         help_text="Percentage of loan amount")
-    late_penalty_rate = models.DecimalField(max_digits=5, decimal_places=2, default=2,
-                                            help_text="Daily penalty percentage")
+    processing_fee = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Percentage of loan amount"
+    )
+    late_penalty_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=2,
+        help_text="Daily penalty percentage"
+    )
     
     # Status
     is_active = models.BooleanField(default=True)
@@ -73,7 +94,7 @@ class Loan(models.Model):
     loan_no = models.CharField(max_length=20, unique=True)
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, related_name='loans')
     product = models.ForeignKey(LoanProduct, on_delete=models.PROTECT, related_name='loans')
-    branch = models.ForeignKey('branches.Branch', on_delete=models.SET_NULL, null=True, related_name='loans')
+    branch = models.ForeignKey('branches.Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='loans')
     
     # Loan details
     principal = models.DecimalField(max_digits=12, decimal_places=2)
@@ -104,14 +125,29 @@ class Loan(models.Model):
     notes = models.TextField(blank=True)
     
     # Approvals
-    approved_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, 
-                                    related_name='approved_loans', blank=True)
-    disbursed_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True,
-                                     related_name='disbursed_loans', blank=True)
+    approved_by = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='approved_loans'
+    )
+    disbursed_by = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='disbursed_loans'
+    )
     
     # Auditing
-    created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True,
-                                   related_name='created_loans')
+    created_by = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='created_loans'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -226,6 +262,8 @@ class LoanSchedule(models.Model):
     
     def mark_as_paid(self, amount=None):
         """Mark schedule as paid"""
+        from django.utils import timezone
+        
         if amount is None:
             amount = self.total_due
         
