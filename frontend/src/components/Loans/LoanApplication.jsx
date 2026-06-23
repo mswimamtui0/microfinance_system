@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { loanAPI } from '../../api';
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { loanAPI, customerAPI, productAPI } from '../../api';
 import toast from 'react-hot-toast';
 
-const LoanApplication = ({ onClose, products, customers }) => {
+const LoanApplication = ({ onClose }) => {
   const [formData, setFormData] = useState({
     customer: '',
     product: '',
@@ -14,35 +14,38 @@ const LoanApplication = ({ onClose, products, customers }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const queryClient = useQueryClient();
 
+  // Fetch customers
+  const { data: customers, isLoading: customersLoading } = useQuery({
+    queryKey: ['customers-for-loan'],
+    queryFn: () => customerAPI.getAll(),
+  });
+
+  // Fetch loan products
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ['products-for-loan'],
+    queryFn: () => productAPI.getAll(),
+  });
+
   const createLoanMutation = useMutation({
     mutationFn: async (data) => {
-      console.log('📤 Sending loan data:', data);
+      console.log('Sending loan data:', data);
       const response = await loanAPI.create(data);
-      console.log('📥 Loan creation response:', response);
       return response;
     },
-    onSuccess: (response) => {
-      console.log('✅ Loan created successfully:', response.data);
+    onSuccess: () => {
       queryClient.invalidateQueries(['loans']);
       toast.success('Loan application submitted successfully');
       onClose();
     },
     onError: (error) => {
-      console.error('❌ Loan creation error:', error);
-      console.error('❌ Error response:', error.response);
-      console.error('❌ Error data:', error.response?.data);
-      
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message ||
-                          error.response?.data?.detail ||
-                          'Failed to create loan. Please check all fields and try again.';
-      toast.error(errorMessage);
+      console.error('Loan creation error:', error);
+      toast.error(error.response?.data?.error || 'Failed to create loan');
     },
   });
 
   const handleProductChange = (e) => {
     const productId = parseInt(e.target.value);
-    const product = products.find(p => p.id === productId);
+    const product = products?.data?.results?.find(p => p.id === productId);
     setSelectedProduct(product);
     setFormData({ ...formData, product: productId });
   };
@@ -50,7 +53,6 @@ const LoanApplication = ({ onClose, products, customers }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validate form
     if (!formData.customer) {
       toast.error('Please select a customer');
       return;
@@ -90,7 +92,6 @@ const LoanApplication = ({ onClose, products, customers }) => {
       }
     }
 
-    // Prepare data for API - ensure numeric values
     const loanData = {
       customer: parseInt(formData.customer),
       product: parseInt(formData.product),
@@ -98,9 +99,22 @@ const LoanApplication = ({ onClose, products, customers }) => {
       term_months: parseInt(formData.term_months),
     };
 
-    console.log('📤 Submitting loan data:', loanData);
+    console.log('Submitting loan data:', loanData);
     createLoanMutation.mutate(loanData);
   };
+
+  if (customersLoading || productsLoading) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen px-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+          <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+            <div className="text-center py-8">Loading...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -114,7 +128,7 @@ const LoanApplication = ({ onClose, products, customers }) => {
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              Close
             </button>
           </div>
 
@@ -131,7 +145,7 @@ const LoanApplication = ({ onClose, products, customers }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select Customer</option>
-                {customers?.map((customer) => (
+                {customers?.data?.results?.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.first_name} {customer.last_name} - {customer.customer_no}
                   </option>
@@ -151,7 +165,7 @@ const LoanApplication = ({ onClose, products, customers }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select Product</option>
-                {products?.map((product) => (
+                {products?.data?.results?.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.product_name} - {product.interest_rate}% ({product.interest_method})
                   </option>
