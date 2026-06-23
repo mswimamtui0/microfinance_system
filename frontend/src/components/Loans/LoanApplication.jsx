@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { loanAPI, customerAPI, productAPI } from '../../api';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ const LoanApplication = ({ onClose }) => {
   });
 
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
   const queryClient = useQueryClient();
 
   // Fetch customers
@@ -32,14 +33,51 @@ const LoanApplication = ({ onClose }) => {
       const response = await loanAPI.create(data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log('Loan created successfully:', response.data);
       queryClient.invalidateQueries(['loans']);
       toast.success('Loan application submitted successfully');
       onClose();
     },
     onError: (error) => {
       console.error('Loan creation error:', error);
-      toast.error(error.response?.data?.error || 'Failed to create loan');
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'Failed to create loan. Please try again.';
+      const errorData = error.response?.data;
+      
+      if (errorData) {
+        console.log('Full error data:', JSON.stringify(errorData, null, 2));
+        
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.non_field_errors) {
+          errorMessage = errorData.non_field_errors.join(', ');
+        } else {
+          const fieldErrors = [];
+          Object.keys(errorData).forEach(key => {
+            if (Array.isArray(errorData[key])) {
+              fieldErrors.push(`${key}: ${errorData[key].join(', ')}`);
+            } else if (typeof errorData[key] === 'string') {
+              fieldErrors.push(`${key}: ${errorData[key]}`);
+            }
+          });
+          if (fieldErrors.length > 0) {
+            errorMessage = fieldErrors.join('; ');
+            setValidationErrors(errorData);
+          }
+        }
+      }
+      
+      toast.error(errorMessage);
+      console.error('Full error message:', errorMessage);
     },
   });
 
@@ -48,48 +86,59 @@ const LoanApplication = ({ onClose }) => {
     const product = products?.data?.results?.find(p => p.id === productId);
     setSelectedProduct(product);
     setFormData({ ...formData, product: productId });
+    setValidationErrors({});
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setValidationErrors({});
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setValidationErrors({});
+    
+    const errors = {};
     
     if (!formData.customer) {
-      toast.error('Please select a customer');
-      return;
+      errors.customer = 'Please select a customer';
     }
     if (!formData.product) {
-      toast.error('Please select a loan product');
-      return;
+      errors.product = 'Please select a loan product';
     }
     if (!formData.principal || parseFloat(formData.principal) <= 0) {
-      toast.error('Please enter a valid principal amount');
-      return;
+      errors.principal = 'Please enter a valid principal amount';
     }
     if (!formData.term_months || parseInt(formData.term_months) <= 0) {
-      toast.error('Please enter a valid term');
-      return;
+      errors.term_months = 'Please enter a valid term';
     }
 
-    // Validate against product limits
-    if (selectedProduct) {
+    if (selectedProduct && formData.principal) {
       const principal = parseFloat(formData.principal);
       if (principal < selectedProduct.min_amount) {
-        toast.error(`Minimum amount is TZS ${selectedProduct.min_amount.toLocaleString()}`);
-        return;
+        errors.principal = `Minimum amount is TZS ${selectedProduct.min_amount.toLocaleString()}`;
       }
       if (principal > selectedProduct.max_amount) {
-        toast.error(`Maximum amount is TZS ${selectedProduct.max_amount.toLocaleString()}`);
-        return;
+        errors.principal = `Maximum amount is TZS ${selectedProduct.max_amount.toLocaleString()}`;
       }
+    }
+
+    if (selectedProduct && formData.term_months) {
       const term = parseInt(formData.term_months);
       if (term < selectedProduct.min_term_months) {
-        toast.error(`Minimum term is ${selectedProduct.min_term_months} months`);
-        return;
+        errors.term_months = `Minimum term is ${selectedProduct.min_term_months} months`;
       }
       if (term > selectedProduct.max_term_months) {
-        toast.error(`Maximum term is ${selectedProduct.max_term_months} months`);
-        return;
+        errors.term_months = `Maximum term is ${selectedProduct.max_term_months} months`;
       }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
+      return;
     }
 
     const loanData = {
@@ -140,9 +189,12 @@ const LoanApplication = ({ onClose }) => {
               </label>
               <select
                 required
+                name="customer"
                 value={formData.customer}
-                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  validationErrors.customer ? 'border-red-500' : 'border-gray-300'
+                }`}
               >
                 <option value="">Select Customer</option>
                 {customers?.data?.results?.map((customer) => (
@@ -151,6 +203,9 @@ const LoanApplication = ({ onClose }) => {
                   </option>
                 ))}
               </select>
+              {validationErrors.customer && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.customer}</p>
+              )}
             </div>
 
             {/* Product Selection */}
@@ -160,9 +215,12 @@ const LoanApplication = ({ onClose }) => {
               </label>
               <select
                 required
+                name="product"
                 value={formData.product}
                 onChange={handleProductChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  validationErrors.product ? 'border-red-500' : 'border-gray-300'
+                }`}
               >
                 <option value="">Select Product</option>
                 {products?.data?.results?.map((product) => (
@@ -171,6 +229,9 @@ const LoanApplication = ({ onClose }) => {
                   </option>
                 ))}
               </select>
+              {validationErrors.product && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.product}</p>
+              )}
             </div>
 
             {/* Product Details */}
@@ -210,14 +271,20 @@ const LoanApplication = ({ onClose }) => {
               <input
                 type="number"
                 required
+                name="principal"
                 min="1000"
                 step="1000"
                 value={formData.principal}
-                onChange={(e) => setFormData({ ...formData, principal: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  validationErrors.principal ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Enter loan amount"
               />
-              {selectedProduct && (
+              {validationErrors.principal && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.principal}</p>
+              )}
+              {selectedProduct && !validationErrors.principal && (
                 <p className="mt-1 text-sm text-gray-500">
                   Amount must be between TZS {selectedProduct.min_amount.toLocaleString()} and TZS {selectedProduct.max_amount.toLocaleString()}
                 </p>
@@ -232,14 +299,42 @@ const LoanApplication = ({ onClose }) => {
               <input
                 type="number"
                 required
+                name="term_months"
                 min="1"
                 max="36"
                 value={formData.term_months}
-                onChange={(e) => setFormData({ ...formData, term_months: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  validationErrors.term_months ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Enter loan term in months"
               />
+              {validationErrors.term_months && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.term_months}</p>
+              )}
+              {selectedProduct && !validationErrors.term_months && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Term must be between {selectedProduct.min_term_months} and {selectedProduct.max_term_months} months
+                </p>
+              )}
             </div>
+
+            {/* Error Display */}
+            {createLoanMutation.error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 whitespace-pre-wrap">
+                  {createLoanMutation.error.response?.data?.error || 
+                   createLoanMutation.error.response?.data?.message ||
+                   createLoanMutation.error.response?.data?.detail ||
+                   'Failed to create loan. Please check all fields and try again.'}
+                </p>
+                {createLoanMutation.error.response?.data && (
+                  <pre className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded overflow-auto max-h-40">
+                    {JSON.stringify(createLoanMutation.error.response.data, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
@@ -259,17 +354,6 @@ const LoanApplication = ({ onClose }) => {
               </button>
             </div>
           </form>
-
-          {/* Error Display */}
-          {createLoanMutation.error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">
-                {createLoanMutation.error.response?.data?.error || 
-                 createLoanMutation.error.response?.data?.message ||
-                 'Failed to create loan. Please try again.'}
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>
