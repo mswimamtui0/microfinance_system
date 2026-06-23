@@ -90,11 +90,14 @@ DATABASES = {
 }
 
 # Use DATABASE_URL if provided (for Render)
-import dj_database_url
-DATABASE_URL = config('DATABASE_URL', default=None)
-if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
-
+# Database
+try:
+    import dj_database_url
+    DATABASE_URL = config('DATABASE_URL', default=None)
+    if DATABASE_URL:
+        DATABASES['default'] = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+except ImportError:
+    pass
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
