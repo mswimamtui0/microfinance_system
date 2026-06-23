@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Payments', href: '/payments' },
   { name: 'Collections', href: '/collections' },
   { name: 'Reports', href: '/reports' },
+  { name: 'Loan Products', href: '/loan-products' },
 ];
 
 const Sidebar = () => {

@@ -17,6 +17,7 @@ import Customers from './pages/Customers';
 import Payments from './pages/Payments';
 import Collections from './pages/Collections';
 import Reports from './pages/Reports';
+import LoanProducts from './pages/LoanProducts';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,15 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             } />
+
+            <Route path="/loan-products" element={
+  <PrivateRoute>
+    <DashboardLayout>
+      <LoanProducts />
+    </DashboardLayout>
+  </PrivateRoute>
+} />
+
             <Route path="/reports" element={
               <PrivateRoute>
                 <DashboardLayout>
