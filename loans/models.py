@@ -213,8 +213,10 @@ class Loan(models.Model):
     def __str__(self):
         return f"{self.loan_no} - {self.customer.full_name}"
     
-    def calculate_total_interest(self):
+   def calculate_total_interest(self):
     """Calculate total interest based on method"""
+    from decimal import Decimal
+    
     principal = Decimal(str(self.principal))
     rate = Decimal(str(self.interest_rate)) / Decimal('100')
     term = Decimal(str(self.term_months))
@@ -238,7 +240,7 @@ class Loan(models.Model):
         
         return total_interest.quantize(Decimal('0.01'))
 
-        
+
     def get_total_payable(self):
         """Calculate total amount to repay"""
         self.total_interest = self.calculate_total_interest()
