@@ -33,12 +33,13 @@ class LoanProductAdmin(admin.ModelAdmin):
     )
 
 @admin.register(Loan)
+@admin.register(Loan)
 class LoanAdmin(admin.ModelAdmin):
     list_display = ['loan_no', 'customer', 'product', 'principal', 'status', 'outstanding_balance', 'created_at']
     list_filter = ['status', 'product', 'branch', 'disbursement_date']
     search_fields = ['loan_no', 'customer__first_name', 'customer__last_name']
-    readonly_fields = ['loan_no', 'total_interest', 'total_payable', 'amount_paid', 'outstanding_balance']
-    
+    readonly_fields = ['loan_no', 'application_date', 'total_interest', 'total_payable', 'amount_paid', 'outstanding_balance', 'created_at', 'updated_at']
+
     fieldsets = (
         ('Loan Information', {
             'fields': ('loan_no', 'customer', 'product', 'branch')
@@ -53,13 +54,12 @@ class LoanAdmin(admin.ModelAdmin):
             'fields': ('total_interest', 'total_payable', 'amount_paid', 'outstanding_balance')
         }),
         ('Dates', {
-            'fields': ('application_date', 'approval_date', 'disbursement_date', 'maturity_date')
+            'fields': ('approval_date', 'disbursement_date', 'maturity_date', 'closed_date')  # removed application_date
         }),
         ('Status', {
             'fields': ('status', 'is_overdue', 'days_overdue', 'notes')
         }),
     )
-
 @admin.register(LoanSchedule)
 class LoanScheduleAdmin(admin.ModelAdmin):
     list_display = ['loan', 'installment_no', 'due_date', 'total_due', 'status']
