@@ -284,6 +284,16 @@ const resources = {
 "System Overview": "Muhtasari wa Mfumo",
 "Total Clients": "Jumla ya Wateja",
 "Collection Rate": "Kiwango cha Makusanyo",
+"Branch Portfolio": "Kwingineko ya Tawi",
+"Branch Clients": "Wateja wa Tawi",
+"Collection Rate": "Kiwango cha Makusanyo",
+"Pending Approvals": "Idhini Zinazosubiri",
+"Branch Manager": "Meneja wa Tawi",
+"Export Branch Report": "Hamisha Ripoti ya Tawi",
+"Branch Performance": "Utendaji wa Tawi",
+"Approve Now": "Kubali Sasa",
+"No pending approvals": "Hakuna idhini zinazosubiri",
+"Manage Branch": "Simamia Tawi",
     }
   }
 };
