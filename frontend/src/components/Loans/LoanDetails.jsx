@@ -28,7 +28,6 @@ const LoanDetails = ({ loan, onClose }) => {
         setRealTimeStatus(response.data);
       } catch (error) {
         console.error('Error fetching real-time status:', error);
-        // If the endpoint fails, try the regular loan details
         try {
           const loanResponse = await loanAPI.getById(loan.id);
           setRealTimeStatus(loanResponse.data);
@@ -42,7 +41,6 @@ const LoanDetails = ({ loan, onClose }) => {
     
     fetchRealTimeStatus();
     
-    // Update every 10 seconds
     const interval = setInterval(fetchRealTimeStatus, 10000);
     return () => clearInterval(interval);
   }, [loan.id]);
@@ -74,44 +72,49 @@ const LoanDetails = ({ loan, onClose }) => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Safe format currency - show decimals for small amounts
+  // Fixed safeFormatCurrency function
   const safeFormatCurrency = (amount) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
+    // Convert to number if it's a string
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    // Check if it's a valid number
+    if (num === undefined || num === null || isNaN(num)) {
       return 'TZS 0.00';
     }
-    if (amount < 1) {
-      return `TZS ${amount.toFixed(4)}`;
+    
+    // For very small amounts, show more decimals
+    if (Math.abs(num) < 1) {
+      return `TZS ${num.toFixed(4)}`;
     }
-    return `TZS ${Number(amount).toLocaleString(undefined, {
+    
+    // For normal amounts, show 2 decimals
+    return `TZS ${Number(num).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })}`;
   };
 
-  // Calculate real-time values if not provided by API
+  // Calculate real-time values
   const getRealTimeValues = () => {
-    if (realTimeStatus && realTimeStatus.per_second !== undefined) {
+    if (realTimeStatus) {
+      const perDay = realTimeStatus.per_day || 0;
       return {
         perSecond: realTimeStatus.per_second || 0,
         perMinute: realTimeStatus.per_minute || 0,
         perHour: realTimeStatus.per_hour || 0,
-        perDay: realTimeStatus.per_day || 0,
-        perWeek: (realTimeStatus.per_day || 0) * 7,
-        perMonth: (realTimeStatus.per_day || 0) * 30,
+        perDay: perDay,
+        perWeek: perDay * 7,
+        perMonth: perDay * 30,
         daysElapsed: realTimeStatus.time_elapsed?.days || 0,
         daysRemaining: realTimeStatus.days_remaining || 0,
         nextDue: realTimeStatus.next_due_date,
-        isOverdue: realTimeStatus.is_overdue,
+        isOverdue: realTimeStatus.is_overdue || false,
         daysOverdue: realTimeStatus.days_overdue || 0,
         penalty: realTimeStatus.penalty || 0,
-        totalPayable: realTimeStatus.total_payable || 0,
-        amountPaid: realTimeStatus.amount_paid || 0,
-        outstanding: realTimeStatus.outstanding_balance || 0,
-        totalDays: realTimeStatus.total_days || 0,
       };
     }
     
-    // Calculate manually if API doesn't return values
+    // Fallback calculation
     if (loan) {
       const today = new Date();
       const disbursed = loan.disbursement_date ? new Date(loan.disbursement_date) : null;
@@ -129,7 +132,6 @@ const LoanDetails = ({ loan, onClose }) => {
       const perMinute = perHour / 60;
       const perSecond = perMinute / 60;
       
-      // Find next due date
       let nextDue = null;
       if (loan.schedules && loan.schedules.length > 0) {
         const pending = loan.schedules.find(s => s.status === 'pending');
@@ -151,10 +153,6 @@ const LoanDetails = ({ loan, onClose }) => {
         isOverdue: loan.is_overdue || false,
         daysOverdue: loan.days_overdue || 0,
         penalty: 0,
-        totalPayable,
-        amountPaid: loan.amount_paid || 0,
-        outstanding: loan.outstanding_balance || 0,
-        totalDays,
       };
     }
     
@@ -171,10 +169,6 @@ const LoanDetails = ({ loan, onClose }) => {
       isOverdue: false,
       daysOverdue: 0,
       penalty: 0,
-      totalPayable: 0,
-      amountPaid: 0,
-      outstanding: 0,
-      totalDays: 0,
     };
   };
 
