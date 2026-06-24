@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { loanAPI, customerAPI, productAPI } from '../../api';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+
+// Inside the component:
+const { t } = useTranslation();
+
+// Replace static text with t():
+// "Welcome" → {t('Welcome')}
+// "Dashboard" → {t('Dashboard')}
+// "Total Portfolio" → {t('Total Portfolio')}
 
 const LoanApplication = ({ onClose }) => {
   const [formData, setFormData] = useState({

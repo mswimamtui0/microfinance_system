@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../api';
+import { useTranslation } from 'react-i18next';
+
+// Inside the component:
+const { t } = useTranslation();
+
+// Replace static text with t():
+// "Welcome" → {t('Welcome')}
+// "Dashboard" → {t('Dashboard')}
+// "Total Portfolio" → {t('Total Portfolio')}
 import { Link } from 'react-router-dom';
 import { 
   UsersIcon, 

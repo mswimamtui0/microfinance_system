@@ -1,4 +1,15 @@
 // Currency formatting for Tanzanian Shillings
+
+import { useTranslation } from 'react-i18next';
+
+// Inside the component:
+const { t } = useTranslation();
+
+// Replace static text with t():
+// "Welcome" → {t('Welcome')}
+// "Dashboard" → {t('Dashboard')}
+// "Total Portfolio" → {t('Total Portfolio')}
+
 export const formatCurrency = (amount) => {
   if (!amount) return 'TZS 0';
   return `TZS ${Number(amount).toLocaleString('en-US', {

@@ -2,6 +2,15 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import ErrorBoundary from '../Common/ErrorBoundary';
+import { useTranslation } from 'react-i18next';
+
+// Inside the component:
+const { t } = useTranslation();
+
+// Replace static text with t():
+// "Welcome" → {t('Welcome')}
+// "Dashboard" → {t('Dashboard')}
+// "Total Portfolio" → {t('Total Portfolio')}
 
 const DashboardLayout = ({ children }) => {
   return (

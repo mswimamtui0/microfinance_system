@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { loanAPI } from '../../api';
 import Loading from '../Common/Loading';
+import { useTranslation } from 'react-i18next';
+
+// Inside the component:
+const { t } = useTranslation();
+
+// Replace static text with t():
+// "Welcome" → {t('Welcome')}
+// "Dashboard" → {t('Dashboard')}
+// "Total Portfolio" → {t('Total Portfolio')}
 import { formatCurrency } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 
