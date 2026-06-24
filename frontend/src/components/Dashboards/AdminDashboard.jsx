@@ -18,7 +18,6 @@ import { formatCurrency } from '../../utils/formatters';
 import Loading from '../Common/Loading';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../../api';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -37,19 +36,34 @@ const AdminDashboard = ({ user }) => {
     end: new Date().toISOString().slice(0, 10),
   });
 
-  const { data: portfolio, isLoading: portfolioLoading } = useQuery({
+  // Fetch portfolio data with error handling
+  const { data: portfolio, isLoading: portfolioLoading, error: portfolioError } = useQuery({
     queryKey: ['portfolio-report', dateRange],
-    queryFn: () => reportAPI.getPortfolio(dateRange),
+    queryFn: () => {
+      console.log('Fetching portfolio data...');
+      return reportAPI.getPortfolio(dateRange);
+    },
   });
+
+  // Log any errors
+  if (portfolioError) {
+    console.error('Portfolio data error:', portfolioError);
+  }
 
   const { data: loans, isLoading: loansLoading } = useQuery({
     queryKey: ['recent-loans'],
-    queryFn: () => loanAPI.getAll({ limit: 10 }),
+    queryFn: () => {
+      console.log('Fetching recent loans...');
+      return loanAPI.getAll({ limit: 10 });
+    },
   });
 
   const { data: customers, isLoading: customersLoading } = useQuery({
     queryKey: ['recent-customers'],
-    queryFn: () => customerAPI.getAll({ limit: 10 }),
+    queryFn: () => {
+      console.log('Fetching recent customers...');
+      return customerAPI.getAll({ limit: 10 });
+    },
   });
 
   const { data: paymentSummary } = useQuery({
@@ -61,24 +75,28 @@ const AdminDashboard = ({ user }) => {
     return <Loading />;
   }
 
+  // Safe data extraction with fallbacks
+  const portfolioData = portfolio?.data || {};
+  console.log('Portfolio data:', portfolioData);
+
   const stats = [
     {
       name: 'Total Portfolio',
-      value: formatCurrency(portfolio?.data?.total_portfolio || 0),
+      value: formatCurrency(portfolioData?.total_portfolio || 0),
       change: '+12.5%',
       changeType: 'positive',
       color: '#0ea5e9',
     },
     {
       name: 'Active Loans',
-      value: portfolio?.data?.active_loans || 0,
+      value: portfolioData?.active_loans || 0,
       change: '+5.2%',
       changeType: 'positive',
       color: '#22c55e',
     },
     {
       name: 'Total Customers',
-      value: portfolio?.data?.total_customers || 0,
+      value: portfolioData?.total_customers || 0,
       change: '+8.1%',
       changeType: 'positive',
       color: '#8b5cf6',
@@ -92,14 +110,14 @@ const AdminDashboard = ({ user }) => {
     },
     {
       name: 'Collection Rate',
-      value: `${portfolio?.data?.collection_rate || 0}%`,
-      change: portfolio?.data?.collection_rate > 85 ? '+3.2%' : '-2.1%',
-      changeType: portfolio?.data?.collection_rate > 85 ? 'positive' : 'negative',
+      value: `${portfolioData?.collection_rate || 0}%`,
+      change: portfolioData?.collection_rate > 85 ? '+3.2%' : '-2.1%',
+      changeType: portfolioData?.collection_rate > 85 ? 'positive' : 'negative',
       color: '#6366f1',
     },
     {
       name: 'Overdue Loans',
-      value: portfolio?.data?.overdue_loans || 0,
+      value: portfolioData?.overdue_loans || 0,
       change: '-2.5%',
       changeType: 'positive',
       color: '#ef4444',
@@ -131,9 +149,9 @@ const AdminDashboard = ({ user }) => {
     datasets: [
       {
         data: [
-          portfolio?.data?.performing || 75,
-          portfolio?.data?.overdue_rate || 15,
-          portfolio?.data?.default_rate || 10,
+          portfolioData?.performing || 75,
+          portfolioData?.overdue_rate || 15,
+          portfolioData?.default_rate || 10,
         ],
         backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
         borderWidth: 0,
@@ -383,15 +401,15 @@ const AdminDashboard = ({ user }) => {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
             <div>
-              <p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolio?.data?.performing || 75}%</p>
+              <p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolioData?.performing || 75}%</p>
               <p style={{ fontSize: '12px', color: '#6b7280' }}>Performing</p>
             </div>
             <div>
-              <p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolio?.data?.overdue_rate || 15}%</p>
+              <p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolioData?.overdue_rate || 15}%</p>
               <p style={{ fontSize: '12px', color: '#6b7280' }}>Overdue</p>
             </div>
             <div>
-              <p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolio?.data?.default_rate || 10}%</p>
+              <p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolioData?.default_rate || 10}%</p>
               <p style={{ fontSize: '12px', color: '#6b7280' }}>Defaulted</p>
             </div>
           </div>
