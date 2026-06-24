@@ -18,6 +18,7 @@ import Payments from './pages/Payments';
 import Collections from './pages/Collections';
 import Reports from './pages/Reports';
 import LoanProducts from './pages/LoanProducts';
+import './i18n/index';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ const queryClient = new QueryClient({
 });
 
 const PrivateRoute = ({ children }) => {
+  const { t } = useTranslation();
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {

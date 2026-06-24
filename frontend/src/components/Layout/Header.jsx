@@ -10,6 +10,7 @@ const Header = () => {
     const newLang = i18n.language === 'sw' ? 'en' : 'sw';
     i18n.changeLanguage(newLang);
     localStorage.setItem('language', newLang);
+    window.location.reload();
   };
 
   return (
@@ -19,7 +20,7 @@ const Header = () => {
           <div className="relative">
             <input
               type="search"
-              placeholder={t('Search...') || 'Search...'}
+              placeholder={t('Search...')}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
             />
           </div>
@@ -44,7 +45,7 @@ const Header = () => {
             onClick={logout}
             className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
           >
-            {t('Logout') || 'Logout'}
+            {t('Logout')}
           </button>
         </div>
       </div>

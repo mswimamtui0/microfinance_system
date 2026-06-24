@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { reportAPI } from '../api';
 import { useTranslation } from 'react-i18next';
 import Loading from '../components/Common/Loading';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 
 const Reports = () => {
   const { t } = useTranslation();
@@ -65,20 +65,44 @@ const Reports = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">{t('Muhtasari wa Makusanyo')}</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Makusanyo Yanayotarajiwa')}</span><span className="font-medium">{formatCurrency(collections?.data?.expected || 0)}</span></div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Makusanyo Halisi')}</span><span className="font-medium text-green-600">{formatCurrency(collections?.data?.actual || 0)}</span></div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Ufanisi wa Makusanyo')}</span><span className="font-medium text-blue-600">{collections?.data?.efficiency || 0}%</span></div>
-            <div className="flex justify-between items-center py-2"><span className="text-gray-600">{t('Kiasi Kilichochelewa')}</span><span className="font-medium text-red-600">{formatCurrency(collections?.data?.overdue || 0)}</span></div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Makusanyo Yanayotarajiwa')}</span>
+              <span className="font-medium">{formatCurrency(collections?.data?.expected || 0)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Makusanyo Halisi')}</span>
+              <span className="font-medium text-green-600">{formatCurrency(collections?.data?.actual || 0)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Ufanisi wa Makusanyo')}</span>
+              <span className="font-medium text-blue-600">{collections?.data?.efficiency || 0}%</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-gray-600">{t('Kiasi Kilichochelewa')}</span>
+              <span className="font-medium text-red-600">{formatCurrency(collections?.data?.overdue || 0)}</span>
+            </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">{t('Ubora wa Kwingineko')}</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Inaendelea Vizuri')}</span><span className="font-medium text-green-600">{portfolio?.data?.performing || 0}%</span></div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Mikopo Iliyochelewa')}</span><span className="font-medium text-yellow-600">{portfolio?.data?.overdue_rate || 0}%</span></div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-gray-600">{t('Kiwango cha Kushindwa')}</span><span className="font-medium text-red-600">{portfolio?.data?.default_rate || 0}%</span></div>
-            <div className="flex justify-between items-center py-2"><span className="text-gray-600">PAR 30</span><span className="font-medium text-orange-600">{portfolio?.data?.par_30 || 0}%</span></div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Inaendelea Vizuri')}</span>
+              <span className="font-medium text-green-600">{portfolio?.data?.performing || 0}%</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Mikopo Iliyochelewa')}</span>
+              <span className="font-medium text-yellow-600">{portfolio?.data?.overdue_rate || 0}%</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">{t('Kiwango cha Kushindwa')}</span>
+              <span className="font-medium text-red-600">{portfolio?.data?.default_rate || 0}%</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-gray-600">PAR 30</span>
+              <span className="font-medium text-orange-600">{portfolio?.data?.par_30 || 0}%</span>
+            </div>
           </div>
         </div>
       </div>
