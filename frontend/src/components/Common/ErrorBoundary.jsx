@@ -1,47 +1,55 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const { t } = useTranslation();
+const ErrorBoundary = ({ children }) => {
+  const { t } = useTranslation();
 
-class ErrorBoundary extends React.Component {
-  
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  const [hasError, setHasError] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  React.useEffect(() => {
     // You could log to an error reporting service here
-  }
+    const handleError = (error) => {
+      console.error('Error caught by boundary:', error);
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-[400px] flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-6xl mb-4"></div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-500 mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Refresh Page
-            </button>
-          </div>
+  const handleReset = () => {
+    setHasError(false);
+    setError(null);
+    window.location.reload();
+  };
+
+  if (hasError) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😅</div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            {t('Something went wrong')}
+          </h2>
+          <p className="text-gray-500 mb-4">
+            {error?.message || t('An unexpected error occurred')}
+          </p>
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            {t('Refresh Page')}
+          </button>
         </div>
-      );
-    }
-
-    return this.props.children;
+      </div>
+    );
   }
-}
+
+  return children;
+};
+
+// Add componentDidCatch for class-like error handling
+ErrorBoundary.getDerivedStateFromError = (error) => {
+  return { hasError: true, error };
+};
 
 export default ErrorBoundary;
