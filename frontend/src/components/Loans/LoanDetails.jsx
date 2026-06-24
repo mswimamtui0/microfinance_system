@@ -74,28 +74,40 @@ const LoanDetails = ({ loan, onClose }) => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Safe format currency
+  // Safe format currency - show decimals for small amounts
   const safeFormatCurrency = (amount) => {
     if (amount === undefined || amount === null || isNaN(amount)) {
-      return 'TZS 0';
+      return 'TZS 0.00';
     }
-    return formatCurrency(amount);
+    if (amount < 1) {
+      return `TZS ${amount.toFixed(4)}`;
+    }
+    return `TZS ${Number(amount).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   // Calculate real-time values if not provided by API
   const getRealTimeValues = () => {
     if (realTimeStatus && realTimeStatus.per_second !== undefined) {
       return {
-        perSecond: realTimeStatus.per_second,
-        perMinute: realTimeStatus.per_minute,
-        perHour: realTimeStatus.per_hour,
-        perDay: realTimeStatus.per_day,
+        perSecond: realTimeStatus.per_second || 0,
+        perMinute: realTimeStatus.per_minute || 0,
+        perHour: realTimeStatus.per_hour || 0,
+        perDay: realTimeStatus.per_day || 0,
+        perWeek: (realTimeStatus.per_day || 0) * 7,
+        perMonth: (realTimeStatus.per_day || 0) * 30,
         daysElapsed: realTimeStatus.time_elapsed?.days || 0,
         daysRemaining: realTimeStatus.days_remaining || 0,
         nextDue: realTimeStatus.next_due_date,
         isOverdue: realTimeStatus.is_overdue,
         daysOverdue: realTimeStatus.days_overdue || 0,
         penalty: realTimeStatus.penalty || 0,
+        totalPayable: realTimeStatus.total_payable || 0,
+        amountPaid: realTimeStatus.amount_paid || 0,
+        outstanding: realTimeStatus.outstanding_balance || 0,
+        totalDays: realTimeStatus.total_days || 0,
       };
     }
     
@@ -131,12 +143,18 @@ const LoanDetails = ({ loan, onClose }) => {
         perMinute,
         perHour,
         perDay,
+        perWeek: perDay * 7,
+        perMonth: perDay * 30,
         daysElapsed,
         daysRemaining,
         nextDue,
         isOverdue: loan.is_overdue || false,
         daysOverdue: loan.days_overdue || 0,
         penalty: 0,
+        totalPayable,
+        amountPaid: loan.amount_paid || 0,
+        outstanding: loan.outstanding_balance || 0,
+        totalDays,
       };
     }
     
@@ -145,12 +163,18 @@ const LoanDetails = ({ loan, onClose }) => {
       perMinute: 0,
       perHour: 0,
       perDay: 0,
+      perWeek: 0,
+      perMonth: 0,
       daysElapsed: 0,
       daysRemaining: 0,
       nextDue: null,
       isOverdue: false,
       daysOverdue: 0,
       penalty: 0,
+      totalPayable: 0,
+      amountPaid: 0,
+      outstanding: 0,
+      totalDays: 0,
     };
   };
 
@@ -196,7 +220,7 @@ const LoanDetails = ({ loan, onClose }) => {
           {/* Real-Time Status */}
           <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
             <h4 className="font-medium text-blue-900 mb-3">Real-Time Status</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-blue-700">Per Second:</span>
                 <span className="ml-2 font-medium text-blue-900">
@@ -219,6 +243,18 @@ const LoanDetails = ({ loan, onClose }) => {
                 <span className="text-blue-700">Per Day:</span>
                 <span className="ml-2 font-medium text-blue-900">
                   {safeFormatCurrency(realTime.perDay)}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Per Week:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perWeek)}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Per Month:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perMonth)}
                 </span>
               </div>
             </div>
