@@ -67,42 +67,42 @@ const AdminDashboard = ({ user }) => {
 
   const stats = [
     {
-      name: 'Total Portfolio',
+      name: t('Total Portfolio'),
       value: formatCurrency(portfolio?.data?.total_portfolio || 0),
       change: '+12.5%',
       changeType: 'positive',
       color: '#0ea5e9',
     },
     {
-      name: 'Active Loans',
+      name: t('Active Loans'),
       value: portfolio?.data?.active_loans || 0,
       change: '+5.2%',
       changeType: 'positive',
       color: '#22c55e',
     },
     {
-      name: 'Total Customers',
+      name: t('Total Customers'),
       value: portfolio?.data?.total_customers || 0,
       change: '+8.1%',
       changeType: 'positive',
       color: '#8b5cf6',
     },
     {
-      name: 'Total Branches',
+      name: t('Total Branches'),
       value: 5,
       change: '0%',
       changeType: 'neutral',
       color: '#f59e0b',
     },
     {
-      name: 'Collection Rate',
+      name: t('Collection Rate'),
       value: `${portfolio?.data?.collection_rate || 0}%`,
       change: portfolio?.data?.collection_rate > 85 ? '+3.2%' : '-2.1%',
       changeType: portfolio?.data?.collection_rate > 85 ? 'positive' : 'negative',
       color: '#6366f1',
     },
     {
-      name: 'Overdue Loans',
+      name: t('Overdue Loans'),
       value: portfolio?.data?.overdue_loans || 0,
       change: '-2.5%',
       changeType: 'positive',
@@ -114,7 +114,7 @@ const AdminDashboard = ({ user }) => {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
-        label: 'Disbursements',
+        label: t('Disbursements'),
         data: [12000000, 15000000, 18000000, 22000000, 25000000, 30000000, 28000000, 35000000, 32000000, 38000000, 40000000, 45000000],
         backgroundColor: 'rgba(14, 165, 233, 0.8)',
         borderColor: 'rgb(14, 165, 233)',
@@ -122,7 +122,7 @@ const AdminDashboard = ({ user }) => {
         fill: false,
       },
       {
-        label: 'Collections',
+        label: t('Collections'),
         data: [8000000, 10000000, 12000000, 15000000, 18000000, 22000000, 25000000, 28000000, 30000000, 32000000, 35000000, 38000000],
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderColor: 'rgb(34, 197, 94)',
@@ -133,7 +133,7 @@ const AdminDashboard = ({ user }) => {
   };
 
   const doughnutData = {
-    labels: ['Performing', 'Overdue', 'Defaulted'],
+    labels: [t('Performing'), t('Overdue'), t('Defaulted')],
     datasets: [
       {
         data: [portfolio?.data?.performing || 75, portfolio?.data?.overdue_rate || 15, portfolio?.data?.default_rate || 10],
@@ -144,10 +144,10 @@ const AdminDashboard = ({ user }) => {
   };
 
   const lineData = {
-    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+    labels: [t('Week 1'), t('Week 2'), t('Week 3'), t('Week 4')],
     datasets: [
       {
-        label: 'New Customers',
+        label: t('New Customers'),
         data: [12, 19, 15, 22],
         borderColor: 'rgb(14, 165, 233)',
         backgroundColor: 'rgba(14, 165, 233, 0.1)',
@@ -155,7 +155,7 @@ const AdminDashboard = ({ user }) => {
         tension: 0.4,
       },
       {
-        label: 'New Loans',
+        label: t('New Loans'),
         data: [8, 12, 10, 18],
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -165,61 +165,59 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  // Quick Actions - Using buttons that open in new tab
   const quickActions = [
     { 
-      name: 'Manage Users', 
+      name: t('Manage Users'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/auth/user/', 
       color: '#8b5cf6' 
     },
     { 
-      name: 'System Settings', 
+      name: t('System Settings'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/', 
       color: '#6b7280' 
     },
     { 
-      name: 'Audit Logs', 
+      name: t('Audit Logs'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/audit/auditlog/', 
       color: '#6b7280' 
     },
     { 
-      name: 'Export Reports', 
+      name: t('Export Reports'), 
       href: '#', 
       color: '#22c55e',
-      onClick: () => alert('Reports export coming soon!')
+      onClick: () => alert(t('Reports export coming soon!'))
     },
     { 
-      name: 'Manage Branches', 
+      name: t('Manage Branches'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/branches/branch/', 
       color: '#0ea5e9' 
     },
     { 
-      name: 'New Loan', 
+      name: t('New Loan'), 
       href: '/loans/new', 
       color: '#0ea5e9',
       internal: true 
     },
   ];
 
-  // Admin-only actions for loan products
   const adminActions = [
     { 
-      name: 'Add Loan Product', 
+      name: t('Add Loan Product'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/add/', 
       color: '#10b981' 
     },
     { 
-      name: 'View Loan Products', 
+      name: t('View Loan Products'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/', 
       color: '#3b82f6' 
     },
     { 
-      name: 'View Customers', 
+      name: t('View Customers'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/customers/customer/', 
       color: '#8b5cf6' 
     },
     { 
-      name: 'View All Loans', 
+      name: t('View All Loans'), 
       href: 'https://microfinance-system-df49.onrender.com/admin/loans/loan/', 
       color: '#ef4444' 
     },
@@ -237,23 +235,23 @@ const AdminDashboard = ({ user }) => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-2xl font-bold">
-              Welcome, {user?.first_name || user?.username}!
+              {t('Welcome')}, {user?.first_name || user?.username}!
             </h1>
             <p style={{ opacity: 0.9, marginTop: '4px' }}>
-              System Administrator • Full System Access
+              {t('System Administrator')} • {t('Full System Access')}
             </p>
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>
-                Super Admin
+                {t('Super Admin')}
               </span>
               <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>
-                All Branches
+                {t('All Branches')}
               </span>
             </div>
           </div>
           <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
             <button style={{ padding: '8px 16px', background: 'white', color: '#0369a1', borderRadius: '8px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>
-              Export System Report
+              {t('Export System Report')}
             </button>
           </div>
         </div>
@@ -296,7 +294,7 @@ const AdminDashboard = ({ user }) => {
         border: '1px solid #e5e7eb'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Loan Products</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Loan Products')}</h3>
           <span style={{ fontSize: '12px', color: '#6b7280' }}>
             <a 
               href="https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/" 
@@ -304,7 +302,7 @@ const AdminDashboard = ({ user }) => {
               rel="noopener noreferrer"
               style={{ color: '#0284c7', textDecoration: 'none' }}
             >
-              Manage Products →
+              {t('Manage Products')} →
             </a>
           </span>
         </div>
@@ -363,7 +361,7 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Quick Actions</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Quick Actions')}</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
@@ -444,7 +442,7 @@ const AdminDashboard = ({ user }) => {
                 <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
                 {action.href !== '#' && action.href !== '/loans/new' && (
                   <span style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>
-                    (Opens in new tab)
+                    ({t('Opens in new tab')})
                   </span>
                 )}
               </a>
@@ -467,11 +465,11 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Financial Performance</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Financial Performance')}</h3>
             <select style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
-              <option>This Year</option>
-              <option>Last Year</option>
-              <option>Last 6 Months</option>
+              <option>{t('This Year')}</option>
+              <option>{t('Last Year')}</option>
+              <option>{t('Last 6 Months')}</option>
             </select>
           </div>
           <div style={{ height: '300px' }}>
@@ -505,7 +503,7 @@ const AdminDashboard = ({ user }) => {
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           border: '1px solid #e5e7eb'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Portfolio Quality</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Portfolio Quality')}</h3>
           <div style={{ height: '250px' }}>
             <Doughnut data={doughnutData} options={{
               responsive: true,
@@ -524,15 +522,15 @@ const AdminDashboard = ({ user }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
             <div>
               <p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolio?.data?.performing || 75}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>Performing</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Performing')}</p>
             </div>
             <div>
               <p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolio?.data?.overdue_rate || 15}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>Overdue</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Overdue')}</p>
             </div>
             <div>
               <p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolio?.data?.default_rate || 10}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>Defaulted</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Defaulted')}</p>
             </div>
           </div>
         </div>
@@ -546,7 +544,7 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Growth Metrics</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Growth Metrics')}</h3>
         <div style={{ height: '250px' }}>
           <Line data={lineData} options={{
             responsive: true,
@@ -578,8 +576,8 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Loans</h3>
-            <Link to="/loans" style={{ color: '#0284c7', fontSize: '14px' }}>View All →</Link>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Recent Loans')}</h3>
+            <Link to="/loans" style={{ color: '#0284c7', fontSize: '14px' }}>{t('View All')} →</Link>
           </div>
           {loans?.data?.results?.slice(0, 5).map((loan) => (
             <div key={loan.id} style={{
@@ -605,7 +603,7 @@ const AdminDashboard = ({ user }) => {
                   background: loan.status === 'active' ? '#dcfce7' : '#fef3c7',
                   color: loan.status === 'active' ? '#166534' : '#92400e'
                 }}>
-                  {loan.status}
+                  {t(loan.status)}
                 </span>
               </div>
             </div>
@@ -620,8 +618,8 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Customers</h3>
-            <Link to="/customers" style={{ color: '#0284c7', fontSize: '14px' }}>View All →</Link>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Recent Customers')}</h3>
+            <Link to="/customers" style={{ color: '#0284c7', fontSize: '14px' }}>{t('View All')} →</Link>
           </div>
           {customers?.data?.results?.slice(0, 5).map((customer) => (
             <div key={customer.id} style={{
@@ -660,7 +658,7 @@ const AdminDashboard = ({ user }) => {
                 background: customer.status === 'active' ? '#dcfce7' : '#fef3c7',
                 color: customer.status === 'active' ? '#166534' : '#92400e'
               }}>
-                {customer.status}
+                {t(customer.status)}
               </span>
             </div>
           ))}
@@ -675,7 +673,7 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>System Status</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('System Status')}</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -683,19 +681,19 @@ const AdminDashboard = ({ user }) => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>API: Online</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('API: Online')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>Database: Connected</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Database: Connected')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#fefce8', borderRadius: '8px', border: '1px solid #fde68a' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>Backup: 2 hours ago</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Backup: 2 hours ago')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>Users Online: 12</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Users Online: 12')}</span>
           </div>
         </div>
       </div>
