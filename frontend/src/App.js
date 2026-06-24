@@ -3,12 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
-
-// Layout
+import { useTranslation } from 'react-i18next';  // ✅ ADD THIS
 import DashboardLayout from './components/Layout/DashboardLayout';
-import { useTranslation } from 'react-i18next';
-
-// Pages
 import PublicHomepage from './pages/PublicHomepage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -18,7 +14,6 @@ import Customers from './pages/Customers';
 import Payments from './pages/Payments';
 import Collections from './pages/Collections';
 import Reports from './pages/Reports';
-import LoanProducts from './pages/LoanProducts';
 import './i18n/index';
 
 const queryClient = new QueryClient({
@@ -32,7 +27,6 @@ const queryClient = new QueryClient({
 });
 
 const PrivateRoute = ({ children }) => {
-  const { t } = useTranslation();
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
@@ -45,18 +39,17 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
+  const { t } = useTranslation();  // ✅ ADD THIS
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
           <Toaster position="top-right" />
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<PublicHomepage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Private Routes */}
             <Route path="/app" element={
               <PrivateRoute>
                 <DashboardLayout>
@@ -65,27 +58,6 @@ function App() {
               </PrivateRoute>
             } />
             <Route path="/loans" element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <Loans />
-                </DashboardLayout>
-              </PrivateRoute>
-            } />
-            <Route path="/loans/new" element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <Loans />
-                </DashboardLayout>
-              </PrivateRoute>
-            } />
-            <Route path="/loans/pending" element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <Loans />
-                </DashboardLayout>
-              </PrivateRoute>
-            } />
-            <Route path="/loans/approved" element={
               <PrivateRoute>
                 <DashboardLayout>
                   <Loans />
@@ -106,13 +78,6 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             } />
-            <Route path="/payments/new" element={
-              <PrivateRoute>
-                <DashboardLayout>
-                  <Payments />
-                </DashboardLayout>
-              </PrivateRoute>
-            } />
             <Route path="/collections" element={
               <PrivateRoute>
                 <DashboardLayout>
@@ -120,15 +85,6 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             } />
-
-            <Route path="/loan-products" element={
-  <PrivateRoute>
-    <DashboardLayout>
-      <LoanProducts />
-    </DashboardLayout>
-  </PrivateRoute>
-} />
-
             <Route path="/reports" element={
               <PrivateRoute>
                 <DashboardLayout>
