@@ -294,6 +294,28 @@ const resources = {
 "Approve Now": "Kubali Sasa",
 "No pending approvals": "Hakuna idhini zinazosubiri",
 "Manage Branch": "Simamia Tawi",
+// Add these to the translation object
+"Reports & Analytics": "Ripoti na Uchambuzi",
+"Start Date": "Tarehe ya Kuanza",
+"End Date": "Tarehe ya Mwisho",
+"Apply Filter": "Weka Kichujio",
+"Total Portfolio": "Jumla ya Kwingineko",
+"Total Customers": "Jumla ya Wateja",
+"Collection Rate": "Kiwango cha Makusanyo",
+"Collections Overview": "Muhtasari wa Makusanyo",
+"Expected Collections": "Makusanyo Yanayotarajiwa",
+"Actual Collections": "Makusanyo Halisi",
+"Collection Efficiency": "Ufanisi wa Makusanyo",
+"Portfolio Quality": "Ubora wa Kwingineko",
+"Overdue Loans": "Mikopo Iliyochelewa",
+"Default Rate": "Kiwango cha Kushindwa",
+"Active Loans": "Mikopo Inayoendelea",
+"Disbursements": "Mikopo Iliyotolewa",
+"Collections": "Makusanyo",
+"Performing": "Inaendelea Vizuri",
+"Defaulted": "Imeshindwa",
+"Overdue": "Imechelewa",
+"System Performance": "Utendaji wa Mfumo",
     }
   }
 };
