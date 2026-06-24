@@ -5,16 +5,9 @@ import { loanAPI } from '../api';
 import { formatCurrency } from '../utils/formatters';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
-
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Fetch loans directly
   const { data: loansData, isLoading } = useQuery({

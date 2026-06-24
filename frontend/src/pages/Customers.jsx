@@ -5,15 +5,7 @@ import CustomerForm from '../components/Customers/CustomerForm';
 import Loading from '../components/Common/Loading';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 
 const Customers = () => {
   const { t } = useTranslation();

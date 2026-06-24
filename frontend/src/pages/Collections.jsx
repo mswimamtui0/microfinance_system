@@ -6,15 +6,9 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 
 const Collections = () => {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
   
   const { data: loans, isLoading } = useQuery({

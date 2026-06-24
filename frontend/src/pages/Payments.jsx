@@ -7,15 +7,8 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
-
 const Payments = () => {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');

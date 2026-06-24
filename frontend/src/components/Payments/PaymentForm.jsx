@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentAPI } from '../../api';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const PaymentForm = ({ onClose, loans, selectedLoan }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     loan: selectedLoan?.id || '',
     amount_paid: '',

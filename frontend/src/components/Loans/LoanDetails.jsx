@@ -3,17 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { loanAPI } from '../../api';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 import Loading from '../Common/Loading';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const LoanDetails = ({ loan, onClose }) => {
+  const { t } = useTranslation();
   const [realTimeStatus, setRealTimeStatus] = useState(null);
   
   const { data: schedule, isLoading: scheduleLoading } = useQuery({
@@ -101,7 +95,7 @@ const LoanDetails = ({ loan, onClose }) => {
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-500">Status</p>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getLoanStatusColor(loan.status)}`}>
-                {loan.status}
+                {t(loan.status)}
               </span>
             </div>
           </div>

@@ -2,14 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportAPI } from '../api';
 import { useTranslation } from 'react-i18next';
-
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 import { 
   ChartBarIcon, 
   DocumentArrowDownIcon, 
@@ -22,6 +14,7 @@ import Loading from '../components/Common/Loading';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const Reports = () => {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 10),
     end: new Date().toISOString().slice(0, 10),

@@ -8,15 +8,8 @@ import toast from 'react-hot-toast';
 import { formatCurrency } from '../utils/formatters';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
-
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
-
 const Loans = () => {
+  const { t } = useTranslation();
   const [showApplication, setShowApplication] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
