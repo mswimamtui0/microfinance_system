@@ -1,22 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportAPI } from '../api';
-import { useTranslation } from 'react-i18next';
-import { 
-  ChartBarIcon, 
-  DocumentArrowDownIcon, 
-  CalendarIcon,
-  CurrencyDollarIcon,
-  UsersIcon,
-  CreditCardIcon
-} from '@heroicons/react/24/outline';
-import Loading from '../components/Common/Loading';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Loading from '../components/Common/Loading';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const Reports = () => {
-  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 10),
+    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
     end: new Date().toISOString().slice(0, 10),
   });
 
@@ -36,47 +28,95 @@ const Reports = () => {
     {
       name: 'Total Portfolio',
       value: formatCurrency(portfolio?.data?.total_portfolio || 0),
-      icon: CurrencyDollarIcon,
-      color: 'bg-blue-500',
+      color: '#0ea5e9',
     },
     {
       name: 'Active Loans',
       value: portfolio?.data?.active_loans || 0,
-      icon: CreditCardIcon,
-      color: 'bg-green-500',
+      color: '#22c55e',
     },
     {
       name: 'Total Customers',
       value: portfolio?.data?.total_customers || 0,
-      icon: UsersIcon,
-      color: 'bg-purple-500',
+      color: '#8b5cf6',
     },
     {
       name: 'Collection Rate',
       value: `${portfolio?.data?.collection_rate || 0}%`,
-      icon: ChartBarIcon,
-      color: 'bg-orange-500',
+      color: '#f59e0b',
     },
   ];
+
+  // Export Portfolio Report
+  const exportPortfolioReport = () => {
+    const data = [
+      { 'Metric': 'Total Portfolio', 'Value': formatCurrency(portfolio?.data?.total_portfolio || 0) },
+      { 'Metric': 'Active Loans', 'Value': portfolio?.data?.active_loans || 0 },
+      { 'Metric': 'Total Customers', 'Value': portfolio?.data?.total_customers || 0 },
+      { 'Metric': 'Collection Rate', 'Value': `${portfolio?.data?.collection_rate || 0}%` },
+      { 'Metric': 'Performing Loans', 'Value': `${portfolio?.data?.performing || 0}%` },
+      { 'Metric': 'Overdue Rate', 'Value': `${portfolio?.data?.overdue_rate || 0}%` },
+      { 'Metric': 'Default Rate', 'Value': `${portfolio?.data?.default_rate || 0}%` },
+      { 'Metric': 'PAR 30', 'Value': `${portfolio?.data?.par_30 || 0}%` },
+      { 'Metric': 'Overdue Loans', 'Value': portfolio?.data?.overdue_loans || 0 },
+      { 'Metric': 'Defaulted Loans', 'Value': portfolio?.data?.defaulted_loans || 0 },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Portfolio Report');
+    
+    const filename = `Portfolio_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, filename);
+  };
+
+  // Export Collections Report
+  const exportCollectionsReport = () => {
+    const data = [
+      { 'Metric': 'Expected Collections', 'Value': formatCurrency(collections?.data?.expected || 0) },
+      { 'Metric': 'Actual Collections', 'Value': formatCurrency(collections?.data?.actual || 0) },
+      { 'Metric': 'Collection Efficiency', 'Value': `${collections?.data?.efficiency || 0}%` },
+      { 'Metric': 'Overdue Amount', 'Value': formatCurrency(collections?.data?.overdue || 0) },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Collections Report');
+    
+    const filename = `Collections_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, filename);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Reports & Analytics</h1>
-        <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-
-          Export Report
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={exportPortfolioReport}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Export Portfolio
+          </button>
+          <button 
+            onClick={exportCollectionsReport}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Export Collections
+          </button>
+        </div>
       </div>
 
       {/* Date Range Filter */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
               value={dateRange.start}
@@ -85,9 +125,7 @@ const Reports = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              End Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
             <input
               type="date"
               value={dateRange.end}
@@ -96,7 +134,6 @@ const Reports = () => {
             />
           </div>
           <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-
             Apply Filter
           </button>
         </div>
@@ -104,25 +141,15 @@ const Reports = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.name}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{stat.value}</p>
-                </div>
-                <div className={`${stat.color} p-3 rounded-lg`}>
-
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {stats.map((stat) => (
+          <div
+            key={stat.name}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+          >
+            <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Detailed Reports */}
@@ -171,54 +198,6 @@ const Reports = () => {
               <span className="font-medium text-orange-600">{portfolio?.data?.par_30 || 0}%</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Activity Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Transactions</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Transaction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {portfolio?.data?.recent_transactions?.map((transaction, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(transaction.date)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatCurrency(transaction.amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full
-                      ${transaction.type === 'disbursement' ? 'bg-blue-100 text-blue-800' : ''}
-                      ${transaction.type === 'payment' ? 'bg-green-100 text-green-800' : ''}
-                    `}>
-                      {transaction.type}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

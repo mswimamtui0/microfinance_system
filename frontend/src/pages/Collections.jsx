@@ -4,6 +4,8 @@ import { loanAPI } from '../api';
 import Loading from '../components/Common/Loading';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { Link } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const Collections = () => {
   const [filter, setFilter] = useState('all');
@@ -11,7 +13,7 @@ const Collections = () => {
   // Fetch ALL loans with their schedules
   const { data: loans, isLoading, refetch } = useQuery({
     queryKey: ['loans-with-schedules'],
-    queryFn: () => loanAPI.getAll({ limit: 1000 }), // Get all loans
+    queryFn: () => loanAPI.getAll({ limit: 1000 }),
   });
 
   if (isLoading) return <Loading />;
@@ -24,14 +26,11 @@ const Collections = () => {
 
   const allLoans = loans?.data?.results || [];
   
-  console.log('All loans:', allLoans);
-  
   // Collect all schedules from all loans
   const allSchedules = [];
   allLoans.forEach(loan => {
     if (loan.schedules && loan.schedules.length > 0) {
       loan.schedules.forEach(schedule => {
-        // Only include pending or overdue schedules
         if (schedule.status === 'pending' || schedule.status === 'overdue' || schedule.status === 'partial') {
           allSchedules.push({
             ...schedule,
@@ -42,8 +41,6 @@ const Collections = () => {
       });
     }
   });
-
-  console.log('All schedules:', allSchedules);
 
   // Filter schedules based on selection
   const filteredSchedules = allSchedules.filter(item => {
@@ -96,14 +93,125 @@ const Collections = () => {
     },
   ];
 
+  // Export to Excel/CSV
+  const exportReport = () => {
+    if (filteredSchedules.length === 0) {
+      alert('No data to export. Please check your collections.');
+      return;
+    }
+
+    // Prepare data for export
+    const exportData = filteredSchedules.map(item => ({
+      'Customer': `${item.customer?.first_name || 'Unknown'} ${item.customer?.last_name || ''}`,
+      'Phone': item.customer?.phone || '',
+      'Loan No': item.loan?.loan_no || 'N/A',
+      'Installment': `#${item.installment_no}`,
+      'Due Date': formatDate(item.due_date),
+      'Amount Due': parseFloat(item.total_due) || 0,
+      'Penalty': parseFloat(item.penalty_amount) || 0,
+      'Total Due': (parseFloat(item.total_due) || 0) + (parseFloat(item.penalty_amount) || 0),
+      'Status': item.status,
+      'Days Overdue': item.status === 'overdue' ? Math.max(0, Math.floor((new Date() - new Date(item.due_date)) / (1000 * 60 * 60 * 24))) : 0,
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, // Customer
+      { wch: 15 }, // Phone
+      { wch: 15 }, // Loan No
+      { wch: 12 }, // Installment
+      { wch: 15 }, // Due Date
+      { wch: 15 }, // Amount Due
+      { wch: 15 }, // Penalty
+      { wch: 15 }, // Total Due
+      { wch: 12 }, // Status
+      { wch: 15 }, // Days Overdue
+    ];
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Collections');
+
+    // Generate file
+    const filename = `Collections_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, filename);
+  };
+
+  // Export Summary Report
+  const exportSummary = () => {
+    const summaryData = [
+      {
+        'Metric': 'Total Collections',
+        'Value': allSchedules.length
+      },
+      {
+        'Metric': 'Due Today',
+        'Value': dueToday.length
+      },
+      {
+        'Metric': 'Due Tomorrow',
+        'Value': dueTomorrow.length
+      },
+      {
+        'Metric': 'Overdue',
+        'Value': overdue.length
+      },
+      {
+        'Metric': 'Defaulters',
+        'Value': defaulters.length
+      },
+      {
+        'Metric': 'Total Overdue Amount',
+        'Value': overdue.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0)
+      },
+      {
+        'Metric': 'Collection Rate',
+        'Value': allSchedules.length > 0 ? 
+          `${Math.round(((allSchedules.length - overdue.length) / allSchedules.length) * 100)}%` : 
+          '0%'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(summaryData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    
+    const filename = `Collections_Summary_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    saveAs(blob, filename);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Collections Dashboard</h1>
-        <button onClick={() => refetch()} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-          Refresh Data
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={exportReport}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Export Report
+          </button>
+          <button 
+            onClick={exportSummary}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Export Summary
+          </button>
+          <button 
+            onClick={() => refetch()} 
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -159,7 +267,11 @@ const Collections = () => {
           </div>
           <div className="text-center p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-gray-500">Collection Rate</p>
-            <p className="text-xl font-bold text-blue-600">0%</p>
+            <p className="text-xl font-bold text-blue-600">
+              {allSchedules.length > 0 ? 
+                `${Math.round(((allSchedules.length - overdue.length) / allSchedules.length) * 100)}%` : 
+                '0%'}
+            </p>
           </div>
         </div>
       </div>
@@ -186,7 +298,7 @@ const Collections = () => {
             fontWeight: '500'
           }}
         >
-          All Collections
+          All Collections ({allSchedules.length})
         </button>
         <button
           onClick={() => setFilter('today')}
@@ -343,11 +455,7 @@ const Collections = () => {
               ) : (
                 <tr>
                   <td colSpan="9" style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                    No collection records found. Make sure you have:
-                    <br />
-                    1. Active loans with repayment schedules
-                    <br />
-                    2. Payments that are due or overdue
+                    No collection records found.
                   </td>
                 </tr>
               )}
@@ -360,3 +468,4 @@ const Collections = () => {
 };
 
 export default Collections;
+
