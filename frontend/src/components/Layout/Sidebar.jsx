@@ -6,12 +6,12 @@ const Sidebar = () => {
   const { t } = useTranslation();
 
   const navigation = [
-    { name: t('Dashibodi'), href: '/app' },
-    { name: t('Wateja'), href: '/customers' },
-    { name: t('Mikopo'), href: '/loans' },
-    { name: t('Malipo'), href: '/payments' },
-    { name: t('Makusanyo'), href: '/collections' },
-    { name: t('Ripoti'), href: '/reports' },
+    { name: t('Dashboard') || 'Dashboard', href: '/app' },
+    { name: t('Customers') || 'Customers', href: '/customers' },
+    { name: t('Loans') || 'Loans', href: '/loans' },
+    { name: t('Payments') || 'Payments', href: '/payments' },
+    { name: t('Collections') || 'Collections', href: '/collections' },
+    { name: t('Reports') || 'Reports', href: '/reports' },
   ];
 
   return (
@@ -50,7 +50,7 @@ const Sidebar = () => {
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-900">John Doe</p>
-            <p className="text-xs text-gray-500">{t('Loan Officer')}</p>
+            <p className="text-xs text-gray-500">{t('Loan Officer') || 'Loan Officer'}</p>
           </div>
         </div>
       </div>
