@@ -20,17 +20,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filter by loan
         loan_id = self.request.query_params.get('loan')
         if loan_id:
             queryset = queryset.filter(loan_id=loan_id)
         
-        # Filter by customer (through loan)
         customer_id = self.request.query_params.get('customer')
         if customer_id:
             queryset = queryset.filter(loan__customer_id=customer_id)
         
-        # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         if start_date:
@@ -45,32 +42,32 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """Create a new payment"""
         try:
             data = request.data
-            logger.info(f"Creating payment with data: {data}")
+            print("=" * 50)
+            print("PAYMENT CREATION REQUEST")
+            print("Data:", data)
+            print("User:", request.user)
+            print("=" * 50)
             
-            # Validate required fields
             required_fields = ['loan', 'amount_paid', 'payment_method', 'payment_date']
-            missing_fields = [f for f in required_fields if f not in data]
-            if missing_fields:
-                return Response({
-                    'error': f'Missing required fields: {", ".join(missing_fields)}'
-                }, status=status.HTTP_400_BAD_REQUEST)
+            for field in required_fields:
+                if field not in data:
+                    return Response({
+                        'error': f'Missing required field: {field}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Get loan
             try:
                 loan = Loan.objects.get(id=data['loan'])
-                logger.info(f"Loan found: {loan.loan_no}")
+                print(f"Loan found: {loan.loan_no}")
             except Loan.DoesNotExist:
                 return Response({
                     'error': 'Loan does not exist'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Check if loan is active
             if loan.status not in ['active', 'disbursed']:
                 return Response({
                     'error': f'Loan is not active (status: {loan.status})'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Validate amount
             try:
                 amount = float(data['amount_paid'])
                 if amount <= 0:
@@ -86,7 +83,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     'error': 'Invalid amount'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Get user (who received the payment)
             user = request.user
             if not user or not user.id:
                 return Response({
@@ -94,19 +90,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_401_UNAUTHORIZED)
             
             # Create payment
+            import uuid
             payment = Payment(
                 loan=loan,
                 amount_paid=amount,
                 payment_method=data['payment_method'],
                 payment_date=data['payment_date'],
                 received_by=user,
-                status='completed',
                 notes=data.get('notes', ''),
+                transaction_ref=f"PAY-{uuid.uuid4().hex[:8].upper()}"
             )
             payment.save()
-            logger.info(f"Payment created: {payment.id}")
+            print(f"Payment created: {payment.id}")
             
-            # Update loan outstanding balance
+            # UPDATE LOAN - THIS IS CRITICAL
             loan.amount_paid = float(loan.amount_paid) + amount
             loan.outstanding_balance = float(loan.total_payable) - float(loan.amount_paid)
             
@@ -114,35 +111,23 @@ class PaymentViewSet(viewsets.ModelViewSet):
             if loan.outstanding_balance <= 0:
                 loan.status = 'paid'
                 loan.closed_date = timezone.now().date()
-                logger.info(f"Loan {loan.loan_no} fully paid!")
+                payment.status = 'completed'  # Full payment
+                print(f"Loan {loan.loan_no} FULLY PAID!")
             else:
                 loan.status = 'active'
+                payment.status = 'partial'  # Partial payment
+                print(f"Loan {loan.loan_no} PARTIALLY PAID. Remaining: {loan.outstanding_balance}")
             
             loan.save()
-            logger.info(f"Loan updated: {loan.loan_no}, outstanding: {loan.outstanding_balance}")
+            payment.save()
             
-            # Try to update schedule if linked
-            schedule_id = data.get('schedule')
-            if schedule_id:
-                try:
-                    schedule = LoanSchedule.objects.get(id=schedule_id)
-                    schedule.amount_paid = float(schedule.amount_paid) + amount
-                    if schedule.amount_paid >= float(schedule.total_due):
-                        schedule.status = 'paid'
-                        schedule.paid_date = timezone.now().date()
-                    else:
-                        schedule.status = 'partial'
-                    schedule.save()
-                    payment.schedule = schedule
-                    payment.save()
-                except LoanSchedule.DoesNotExist:
-                    pass
+            print(f"Loan updated: {loan.loan_no}, outstanding: {loan.outstanding_balance}")
             
             serializer = self.get_serializer(payment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Error creating payment: {str(e)}")
+            print(f"ERROR: {str(e)}")
             import traceback
             traceback.print_exc()
             return Response({
@@ -151,7 +136,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Get payment summary for dashboard"""
+        """Get payment summary"""
         from django.db.models import Sum
         
         total_payments = Payment.objects.filter(status='completed').aggregate(
