@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { loanAPI } from '../../api';
-import { useTranslation } from 'react-i18next';
-
 import Loading from '../Common/Loading';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const LoanDetails = ({ loan, onClose }) => {
-  const { t } = useTranslation();
   const [realTimeStatus, setRealTimeStatus] = useState(null);
   
   const { data: schedule, isLoading: scheduleLoading } = useQuery({
@@ -24,7 +21,7 @@ const LoanDetails = ({ loan, onClose }) => {
   useEffect(() => {
     const fetchRealTimeStatus = async () => {
       try {
-        const response = await loanAPI.getById(loan.id);
+        const response = await loanAPI.getLoanRealTimeStatus(loan.id);
         setRealTimeStatus(response.data);
       } catch (error) {
         console.error('Error fetching real-time status:', error);
@@ -38,7 +35,9 @@ const LoanDetails = ({ loan, onClose }) => {
     return () => clearInterval(interval);
   }, [loan.id]);
 
-  if (scheduleLoading || summaryLoading) return <Loading />;
+  if (scheduleLoading || summaryLoading) {
+    return <Loading />;
+  }
 
   const getStatusColor = (status) => {
     const colors = {
@@ -61,6 +60,14 @@ const LoanDetails = ({ loan, onClose }) => {
       defaulted: 'bg-red-100 text-red-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Format currency safely
+  const safeFormatCurrency = (amount) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return 'TZS 0';
+    }
+    return formatCurrency(amount);
   };
 
   return (
@@ -86,16 +93,16 @@ const LoanDetails = ({ loan, onClose }) => {
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-500">Principal</p>
-              <p className="font-medium text-gray-900">{formatCurrency(loan.principal)}</p>
+              <p className="font-medium text-gray-900">{safeFormatCurrency(loan.principal)}</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-500">Outstanding Balance</p>
-              <p className="font-medium text-gray-900">{formatCurrency(loan.outstanding_balance)}</p>
+              <p className="font-medium text-gray-900">{safeFormatCurrency(loan.outstanding_balance)}</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-500">Status</p>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getLoanStatusColor(loan.status)}`}>
-                {t(loan.status)}
+                {loan.status}
               </span>
             </div>
           </div>
@@ -107,25 +114,35 @@ const LoanDetails = ({ loan, onClose }) => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-blue-700">Per Second:</span>
-                  <span className="ml-2 font-medium text-blue-900">{formatCurrency(realTimeStatus.per_second || 0)}</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {safeFormatCurrency(realTimeStatus.per_second || 0)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-blue-700">Per Minute:</span>
-                  <span className="ml-2 font-medium text-blue-900">{formatCurrency(realTimeStatus.per_minute || 0)}</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {safeFormatCurrency(realTimeStatus.per_minute || 0)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-blue-700">Per Hour:</span>
-                  <span className="ml-2 font-medium text-blue-900">{formatCurrency(realTimeStatus.per_hour || 0)}</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {safeFormatCurrency(realTimeStatus.per_hour || 0)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-blue-700">Per Day:</span>
-                  <span className="ml-2 font-medium text-blue-900">{formatCurrency(realTimeStatus.per_day || 0)}</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {safeFormatCurrency(realTimeStatus.per_day || 0)}
+                  </span>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-blue-700">Days Elapsed:</span>
-                  <span className="ml-2 font-medium text-blue-900">{realTimeStatus.time_elapsed?.days || 0} days</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {realTimeStatus.time_elapsed?.days || 0} days
+                  </span>
                 </div>
                 <div>
                   <span className="text-blue-700">Days Remaining:</span>
@@ -135,11 +152,13 @@ const LoanDetails = ({ loan, onClose }) => {
                 </div>
                 <div>
                   <span className="text-blue-700">Next Due:</span>
-                  <span className="ml-2 font-medium text-blue-900">{formatDate(realTimeStatus.next_due_date)}</span>
+                  <span className="ml-2 font-medium text-blue-900">
+                    {realTimeStatus.next_due_date ? formatDate(realTimeStatus.next_due_date) : '-'}
+                  </span>
                 </div>
                 {realTimeStatus.is_overdue && (
                   <div className="col-span-2 md:col-span-3 text-red-600 font-medium">
-                    ⚠️ Overdue by {realTimeStatus.days_overdue} days | Penalty: {formatCurrency(realTimeStatus.penalty || 0)}
+                    ⚠️ Overdue by {realTimeStatus.days_overdue} days | Penalty: {safeFormatCurrency(realTimeStatus.penalty || 0)}
                   </div>
                 )}
               </div>
@@ -166,11 +185,11 @@ const LoanDetails = ({ loan, onClose }) => {
             </div>
             <div>
               <span className="text-gray-500">Total Interest:</span>
-              <span className="ml-2 font-medium">{formatCurrency(loan.total_interest)}</span>
+              <span className="ml-2 font-medium">{safeFormatCurrency(loan.total_interest)}</span>
             </div>
             <div>
               <span className="text-gray-500">Total Payable:</span>
-              <span className="ml-2 font-medium">{formatCurrency(loan.total_payable)}</span>
+              <span className="ml-2 font-medium">{safeFormatCurrency(loan.total_payable)}</span>
             </div>
             <div>
               <span className="text-gray-500">Disbursed:</span>
@@ -203,10 +222,10 @@ const LoanDetails = ({ loan, onClose }) => {
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">{item.installment_no}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{formatDate(item.due_date)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(item.principal_amount)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(item.interest_amount)}</td>
-                      <td className="px-4 py-3 text-sm text-red-600">{formatCurrency(item.penalty_amount)}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(item.total_due)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{safeFormatCurrency(item.principal_amount)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{safeFormatCurrency(item.interest_amount)}</td>
+                      <td className="px-4 py-3 text-sm text-red-600">{safeFormatCurrency(item.penalty_amount)}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{safeFormatCurrency(item.total_due)}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
                           {item.status}
