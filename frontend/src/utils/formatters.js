@@ -85,7 +85,7 @@ export const getStatusColor = (status) => {
     rejected: 'bg-red-100 text-red-800',
     
     // Customer statuses
-    active: 'bg-green-100 text-green-800',
+    
     inactive: 'bg-gray-100 text-gray-800',
     blacklisted: 'bg-red-100 text-red-800',
     deceased: 'bg-red-100 text-red-800',
