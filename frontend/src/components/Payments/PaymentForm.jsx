@@ -17,7 +17,6 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
   });
 
   const [selectedLoanDetails, setSelectedLoanDetails] = useState(propSelectedLoan || null);
-
   const queryClient = useQueryClient();
 
   // Find loan when ID changes
@@ -115,9 +114,41 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
     return selectedLoanDetails.principal || 0;
   };
 
-  const getInterestRate = () => {
+  const getTotalPayable = () => {
     if (!selectedLoanDetails) return 0;
-    return selectedLoanDetails.interest_rate || 0;
+    return selectedLoanDetails.total_payable || 0;
+  };
+
+  const getInterest = () => {
+    if (!selectedLoanDetails) return 0;
+    return selectedLoanDetails.total_interest || 0;
+  };
+
+  const getAmountPaid = () => {
+    if (!selectedLoanDetails) return 0;
+    return selectedLoanDetails.amount_paid || 0;
+  };
+
+  const getRemainingBalance = () => {
+    if (!selectedLoanDetails) return 0;
+    return selectedLoanDetails.outstanding_balance || 0;
+  };
+
+  const getPaymentStatus = () => {
+    if (!selectedLoanDetails) return 'No loan selected';
+    const balance = selectedLoanDetails.outstanding_balance || 0;
+    const total = selectedLoanDetails.total_payable || 0;
+    if (balance <= 0) return 'Fully Paid ✅';
+    if (selectedLoanDetails.amount_paid > 0) return 'Partially Paid';
+    return 'Not Paid';
+  };
+
+  const getProgressPercentage = () => {
+    if (!selectedLoanDetails) return 0;
+    const total = selectedLoanDetails.total_payable || 0;
+    const paid = selectedLoanDetails.amount_paid || 0;
+    if (total <= 0) return 0;
+    return Math.round((paid / total) * 100);
   };
 
   return (
@@ -136,19 +167,19 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Loan Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Loan *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Loan *</label>
               <select
                 required
                 value={formData.loan}
                 onChange={handleLoanChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="">Select Loan</option>
+                <option value="">-- Select a Loan --</option>
                 {loans && loans.length > 0 ? (
                   loans.map((loan) => (
                     <option key={loan.id} value={loan.id}>
-                      {loan.loan_no || 'N/A'} - {loan.customer?.first_name || 'Unknown'} {loan.customer?.last_name || ''} - 
-                      Outstanding: {formatCurrency(loan.outstanding_balance)}
+                      {loan.loan_no} - {loan.customer?.first_name || 'Unknown'} {loan.customer?.last_name || ''} 
+                      (Balance: {formatCurrency(loan.outstanding_balance)})
                     </option>
                   ))
                 ) : (
@@ -157,26 +188,87 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
               </select>
             </div>
 
-            {/* Loan Details */}
+            {/* Loan Details - Complete Summary */}
             {selectedLoanDetails && (
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <h4 className="font-medium text-gray-900">Loan Details</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Outstanding Balance:</span>
-                    <span className="ml-2 font-medium">{formatCurrency(getOutstandingBalance())}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Principal:</span>
-                    <span className="ml-2 font-medium">{formatCurrency(getPrincipal())}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Interest Rate:</span>
-                    <span className="ml-2 font-medium">{getInterestRate()}%</span>
-                  </div>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                <h4 className="font-semibold text-gray-900 text-lg">Loan Summary</h4>
+                
+                {/* Customer & Loan Info */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-gray-500">Loan No:</span>
-                    <span className="ml-2 font-medium">{selectedLoanDetails.loan_no || 'N/A'}</span>
+                    <span className="ml-2 font-medium text-gray-900">{selectedLoanDetails.loan_no || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Customer:</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {selectedLoanDetails.customer?.first_name || 'Unknown'} {selectedLoanDetails.customer?.last_name || ''}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Product:</span>
+                    <span className="ml-2 font-medium text-gray-900">{selectedLoanDetails.product_details?.product_name || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Status:</span>
+                    <span className={`ml-2 font-medium px-2 py-0.5 rounded-full text-xs ${
+                      selectedLoanDetails.status === 'active' ? 'bg-green-100 text-green-800' :
+                      selectedLoanDetails.status === 'paid' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedLoanDetails.status || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  {/* Principal & Interest Breakdown */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500">Principal:</span>
+                      <span className="ml-2 font-medium text-gray-900">{formatCurrency(getPrincipal())}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Interest:</span>
+                      <span className="ml-2 font-medium text-gray-900">{formatCurrency(getInterest())}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-500">Total Payable:</span>
+                      <span className="ml-2 font-bold text-gray-900">{formatCurrency(getTotalPayable())}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  {/* Payment Progress */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500">Amount Paid:</span>
+                      <span className="ml-2 font-medium text-green-600">{formatCurrency(getAmountPaid())}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Remaining:</span>
+                      <span className="ml-2 font-medium text-red-600">{formatCurrency(getRemainingBalance())}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-500">Payment Status:</span>
+                      <span className={`ml-2 font-medium px-2 py-0.5 rounded-full text-xs ${
+                        getRemainingBalance() <= 0 ? 'bg-green-100 text-green-800' :
+                        getAmountPaid() > 0 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {getPaymentStatus()}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
+                          style={{ width: `${getProgressPercentage()}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 text-right">{getProgressPercentage()}% Paid</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -184,7 +276,7 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount Paid (TZS) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount to Pay (TZS) *</label>
               <input
                 type="number"
                 required
@@ -197,7 +289,12 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
               />
               {selectedLoanDetails && (
                 <p className="mt-1 text-sm text-gray-500">
-                  Maximum: {formatCurrency(getOutstandingBalance())}
+                  Maximum: {formatCurrency(getRemainingBalance())}
+                </p>
+              )}
+              {selectedLoanDetails && parseFloat(formData.amount_paid) > 0 && (
+                <p className="mt-1 text-sm text-green-600">
+                  After payment, new balance: {formatCurrency(getRemainingBalance() - parseFloat(formData.amount_paid))}
                 </p>
               )}
             </div>
@@ -239,9 +336,9 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows="3"
+                rows="2"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Optional notes"
+                placeholder="Optional notes or reference"
               />
             </div>
 
