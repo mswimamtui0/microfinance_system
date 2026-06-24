@@ -39,7 +39,7 @@ const LoanApplication = ({ onClose }) => {
     onSuccess: (response) => {
       console.log('Loan created successfully:', response.data);
       queryClient.invalidateQueries(['loans']);
-      toast.success('Loan application submitted successfully');
+      toast.success(t('Ombi la mkopo limetumwa kikamilifu'));
       onClose();
     },
     onError: (error) => {
@@ -47,7 +47,7 @@ const LoanApplication = ({ onClose }) => {
       console.error('Error response:', error.response);
       console.error('Error data:', error.response?.data);
       
-      let errorMessage = 'Failed to create loan. Please try again.';
+      let errorMessage = t('Imeshindwa kuunda mkopo. Tafadhali jaribu tena.');
       const errorData = error.response?.data;
       
       if (errorData) {
@@ -63,9 +63,9 @@ const LoanApplication = ({ onClose }) => {
           const fieldErrors = [];
           Object.keys(errorData).forEach(key => {
             if (Array.isArray(errorData[key])) {
-              fieldErrors.push(`${key}: ${errorData[key].join(', ')}`);
+              fieldErrors.push(`${t(key)}: ${errorData[key].join(', ')}`);
             } else if (typeof errorData[key] === 'string') {
-              fieldErrors.push(`${key}: ${errorData[key]}`);
+              fieldErrors.push(`${t(key)}: ${errorData[key]}`);
             }
           });
           if (fieldErrors.length > 0) {
@@ -136,10 +136,10 @@ const LoanApplication = ({ onClose }) => {
     
     // Get frequency details
     const frequencyMap = {
-      daily: { label: 'Daily', period: 1, payment: dailyAmount },
-      weekly: { label: 'Weekly', period: 7, payment: weeklyAmount },
-      monthly: { label: 'Monthly', period: 30, payment: monthlyAmount },
-      custom: { label: 'Custom', period: product.custom_frequency_days || 30, payment: dailyAmount * (product.custom_frequency_days || 30) }
+      daily: { label: t('Kila Siku'), period: 1, payment: dailyAmount },
+      weekly: { label: t('Kila Wiki'), period: 7, payment: weeklyAmount },
+      monthly: { label: t('Kila Mwezi'), period: 30, payment: monthlyAmount },
+      custom: { label: t('Maalum'), period: product.custom_frequency_days || 30, payment: dailyAmount * (product.custom_frequency_days || 30) }
     };
     
     const freq = frequencyMap[product.repayment_frequency] || frequencyMap.monthly;
@@ -169,35 +169,35 @@ const LoanApplication = ({ onClose }) => {
     const errors = {};
     
     if (!formData.customer) {
-      errors.customer = 'Please select a customer';
+      errors.customer = t('Tafadhali chagua mteja');
     }
     if (!formData.product) {
-      errors.product = 'Please select a loan product';
+      errors.product = t('Tafadhali chagua bidhaa ya mkopo');
     }
     if (!formData.principal || parseFloat(formData.principal) <= 0) {
-      errors.principal = 'Please enter a valid principal amount';
+      errors.principal = t('Tafadhali weka kiasi sahihi');
     }
     if (!formData.term_months || parseInt(formData.term_months) <= 0) {
-      errors.term_months = 'Please enter a valid term';
+      errors.term_months = t('Tafadhali weka muda sahihi');
     }
 
     if (selectedProduct && formData.principal) {
       const principal = parseFloat(formData.principal);
       if (principal < selectedProduct.min_amount) {
-        errors.principal = `Minimum amount is TZS ${selectedProduct.min_amount.toLocaleString()}`;
+        errors.principal = t('Kiasi cha chini ni') + ' TZS ' + selectedProduct.min_amount.toLocaleString();
       }
       if (principal > selectedProduct.max_amount) {
-        errors.principal = `Maximum amount is TZS ${selectedProduct.max_amount.toLocaleString()}`;
+        errors.principal = t('Kiasi cha juu ni') + ' TZS ' + selectedProduct.max_amount.toLocaleString();
       }
     }
 
     if (selectedProduct && formData.term_months) {
       const term = parseInt(formData.term_months);
       if (term < selectedProduct.min_term_months) {
-        errors.term_months = `Minimum term is ${selectedProduct.min_term_months} months`;
+        errors.term_months = t('Muda wa chini ni') + ' ' + selectedProduct.min_term_months + ' ' + t('miezi');
       }
       if (term > selectedProduct.max_term_months) {
-        errors.term_months = `Maximum term is ${selectedProduct.max_term_months} months`;
+        errors.term_months = t('Muda wa juu ni') + ' ' + selectedProduct.max_term_months + ' ' + t('miezi');
       }
     }
 
@@ -225,7 +225,7 @@ const LoanApplication = ({ onClose }) => {
         <div className="flex items-center justify-center min-h-screen px-4">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
           <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8">{t('Inapakia...')}</div>
           </div>
         </div>
       </div>
@@ -239,12 +239,12 @@ const LoanApplication = ({ onClose }) => {
         
         <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">New Loan Application</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('Ombi Mpya la Mkopo')}</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Close
+              {t('Funga')}
             </button>
           </div>
 
@@ -252,7 +252,7 @@ const LoanApplication = ({ onClose }) => {
             {/* Customer Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer *
+                {t('Mteja')} *
               </label>
               <select
                 required
@@ -263,7 +263,7 @@ const LoanApplication = ({ onClose }) => {
                   validationErrors.customer ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Select Customer</option>
+                <option value="">{t('Chagua Mteja')}</option>
                 {customers?.data?.results?.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.first_name} {customer.last_name} - {customer.customer_no}
@@ -278,7 +278,7 @@ const LoanApplication = ({ onClose }) => {
             {/* Product Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Loan Product *
+                {t('Bidhaa ya Mkopo')} *
               </label>
               <select
                 required
@@ -289,7 +289,7 @@ const LoanApplication = ({ onClose }) => {
                   validationErrors.product ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Select Product</option>
+                <option value="">{t('Chagua Bidhaa')}</option>
                 {products?.data?.results?.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.product_name} - {product.interest_rate}% ({product.interest_method})
@@ -304,30 +304,30 @@ const LoanApplication = ({ onClose }) => {
             {/* Product Details */}
             {selectedProduct && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <h4 className="font-medium text-gray-900">Product Details</h4>
+                <h4 className="font-medium text-gray-900">{t('Maelezo ya Bidhaa')}</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Min Amount:</span>
+                    <span className="text-gray-500">{t('Kiasi cha Chini')}:</span>
                     <span className="ml-2 font-medium">TZS {selectedProduct.min_amount.toLocaleString()}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Max Amount:</span>
+                    <span className="text-gray-500">{t('Kiasi cha Juu')}:</span>
                     <span className="ml-2 font-medium">TZS {selectedProduct.max_amount.toLocaleString()}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Interest Rate:</span>
+                    <span className="text-gray-500">{t('Kiwango cha Riba')}:</span>
                     <span className="ml-2 font-medium">{selectedProduct.interest_rate}%</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Term Range:</span>
-                    <span className="ml-2 font-medium">{selectedProduct.min_term_months} - {selectedProduct.max_term_months} months</span>
+                    <span className="text-gray-500">{t('Muda wa Mkopo')}:</span>
+                    <span className="ml-2 font-medium">{selectedProduct.min_term_months} - {selectedProduct.max_term_months} {t('miezi')}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Frequency:</span>
-                    <span className="ml-2 font-medium capitalize">{selectedProduct.repayment_frequency}</span>
+                    <span className="text-gray-500">{t('Mara ya Malipo')}:</span>
+                    <span className="ml-2 font-medium capitalize">{t(selectedProduct.repayment_frequency)}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Penalty Rate:</span>
+                    <span className="text-gray-500">{t('Kiwango cha Adhabu')}:</span>
                     <span className="ml-2 font-medium">{selectedProduct.penalty_rate}%</span>
                   </div>
                 </div>
@@ -337,7 +337,7 @@ const LoanApplication = ({ onClose }) => {
             {/* Principal Amount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Principal Amount (TZS) *
+                {t('Kiasi cha Mkopo')} (TZS) *
               </label>
               <input
                 type="number"
@@ -350,14 +350,14 @@ const LoanApplication = ({ onClose }) => {
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                   validationErrors.principal ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Enter loan amount"
+                placeholder={t('Weka kiasi cha mkopo')}
               />
               {validationErrors.principal && (
                 <p className="mt-1 text-sm text-red-500">{validationErrors.principal}</p>
               )}
               {selectedProduct && !validationErrors.principal && (
                 <p className="mt-1 text-sm text-gray-500">
-                  Amount must be between TZS {selectedProduct.min_amount.toLocaleString()} and TZS {selectedProduct.max_amount.toLocaleString()}
+                  {t('Kiasi lazima kiwe kati ya')} TZS {selectedProduct.min_amount.toLocaleString()} {t('na')} TZS {selectedProduct.max_amount.toLocaleString()}
                 </p>
               )}
             </div>
@@ -365,7 +365,7 @@ const LoanApplication = ({ onClose }) => {
             {/* Term */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Term (Months) *
+                {t('Muda')} ({t('Miezi')}) *
               </label>
               <input
                 type="number"
@@ -378,14 +378,14 @@ const LoanApplication = ({ onClose }) => {
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                   validationErrors.term_months ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Enter loan term in months"
+                placeholder={t('Weka muda wa mkopo kwa miezi')}
               />
               {validationErrors.term_months && (
                 <p className="mt-1 text-sm text-red-500">{validationErrors.term_months}</p>
               )}
               {selectedProduct && !validationErrors.term_months && (
                 <p className="mt-1 text-sm text-gray-500">
-                  Term must be between {selectedProduct.min_term_months} and {selectedProduct.max_term_months} months
+                  {t('Muda lazima uwe kati ya')} {selectedProduct.min_term_months} {t('na')} {selectedProduct.max_term_months} {t('miezi')}
                 </p>
               )}
             </div>
@@ -393,60 +393,60 @@ const LoanApplication = ({ onClose }) => {
             {/* Real-Time Calculations */}
             {calculations && (
               <div className="bg-blue-50 rounded-lg p-4 space-y-2 border border-blue-200">
-                <h4 className="font-medium text-blue-900">Loan Calculations</h4>
+                <h4 className="font-medium text-blue-900">{t('Mahesabu ya Mkopo')}</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-blue-700">Total Interest:</span>
+                    <span className="text-blue-700">{t('Jumla ya Riba')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.totalInterest}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Total Payable:</span>
+                    <span className="text-blue-700">{t('Jumla ya Kulipa')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.totalPayable}</span>
                   </div>
                   <div className="col-span-2 border-t border-blue-200 pt-2 mt-2">
-                    <span className="text-blue-700 font-medium">Repayment Details:</span>
+                    <span className="text-blue-700 font-medium">{t('Maelezo ya Malipo')}:</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Frequency:</span>
+                    <span className="text-blue-700">{t('Mara')}:</span>
                     <span className="ml-2 font-medium text-blue-900">{calculations.frequency}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Payment Amount:</span>
+                    <span className="text-blue-700">{t('Kiasi cha Malipo')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.paymentAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Total Payments:</span>
+                    <span className="text-blue-700">{t('Jumla ya Malipo')}:</span>
                     <span className="ml-2 font-medium text-blue-900">{calculations.totalPayments}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Period:</span>
-                    <span className="ml-2 font-medium text-blue-900">{calculations.period} days</span>
+                    <span className="text-blue-700">{t('Muda')}:</span>
+                    <span className="ml-2 font-medium text-blue-900">{calculations.period} {t('siku')}</span>
                   </div>
                   <div className="col-span-2 border-t border-blue-200 pt-2 mt-2">
-                    <span className="text-blue-700 font-medium">Real-Time Breakdown:</span>
+                    <span className="text-blue-700 font-medium">{t('Maelezo ya Papo kwa Papo')}:</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Second:</span>
+                    <span className="text-blue-700">{t('Kwa Sekunde')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.secondAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Minute:</span>
+                    <span className="text-blue-700">{t('Kwa Dakika')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.minuteAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Hour:</span>
+                    <span className="text-blue-700">{t('Kwa Saa')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.hourlyAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Day:</span>
+                    <span className="text-blue-700">{t('Kwa Siku')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.dailyAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Week:</span>
+                    <span className="text-blue-700">{t('Kwa Wiki')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.weeklyAmount}</span>
                   </div>
                   <div>
-                    <span className="text-blue-700">Per Month:</span>
+                    <span className="text-blue-700">{t('Kwa Mwezi')}:</span>
                     <span className="ml-2 font-medium text-blue-900">TZS {calculations.monthlyAmount}</span>
                   </div>
                 </div>
@@ -460,7 +460,7 @@ const LoanApplication = ({ onClose }) => {
                   {createLoanMutation.error.response?.data?.error || 
                    createLoanMutation.error.response?.data?.message ||
                    createLoanMutation.error.response?.data?.detail ||
-                   'Failed to create loan. Please check all fields and try again.'}
+                   t('Imeshindwa kuunda mkopo. Tafadhali angalia sehemu zote na jaribu tena.')}
                 </p>
               </div>
             )}
@@ -472,14 +472,14 @@ const LoanApplication = ({ onClose }) => {
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Cancel
+                {t('Ghairi')}
               </button>
               <button
                 type="submit"
                 disabled={createLoanMutation.isLoading}
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createLoanMutation.isLoading ? 'Submitting...' : 'Submit Application'}
+                {createLoanMutation.isLoading ? t('Inawasilisha...') : t('Wasilisha Ombi')}
               </button>
             </div>
           </form>

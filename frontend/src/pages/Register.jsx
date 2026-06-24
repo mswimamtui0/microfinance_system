@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../api';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 const Register = () => {
   const { t } = useTranslation();
@@ -38,7 +38,7 @@ const Register = () => {
         console.log('Branches loaded:', response.data);
       } catch (error) {
         console.error('Failed to fetch branches:', error);
-        toast.error('Could not load branches. Please try again.');
+        toast.error(t('Imeshindwa kupakia matawi. Tafadhali jaribu tena.'));
       }
     };
     fetchBranches();
@@ -68,8 +68,8 @@ const Register = () => {
   };
 
   const getPasswordStrengthText = () => {
-    const levels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-    return levels[passwordStrength] || 'Very Weak';
+    const levels = [t('Dhaifu Sana'), t('Dhaifu'), t('Wastani'), t('Nzuri'), t('Imara')];
+    return levels[passwordStrength] || t('Dhaifu Sana');
   };
 
   const getPasswordStrengthColor = () => {
@@ -82,23 +82,23 @@ const Register = () => {
     setErrors({});
     
     if (!agreeTerms) {
-      toast.error('Please agree to the Terms and Conditions');
+      toast.error(t('Tafadhali kubali Sheria na Masharti'));
       return;
     }
 
     if (formData.password !== formData.password2) {
-      setErrors({ password2: 'Passwords do not match' });
-      toast.error('Passwords do not match');
+      setErrors({ password2: t('Manenosiri hayafanani') });
+      toast.error(t('Manenosiri hayafanani'));
       return;
     }
 
     if (passwordStrength < 3) {
-      toast.error('Please use a stronger password');
+      toast.error(t('Tafadhali tumia nenosiri imara zaidi'));
       return;
     }
 
     if (formData.role !== 'admin' && !formData.branch) {
-      toast.error('Please select a branch');
+      toast.error(t('Tafadhali chagua tawi'));
       return;
     }
 
@@ -111,7 +111,7 @@ const Register = () => {
       console.log('Registration response:', response.data);
       
       if (response.data.success) {
-        toast.success('Registration successful!');
+        toast.success(t('Usajili umefanikiwa!'));
         
         const tokens = response.data.tokens;
         if (tokens && tokens.access) {
@@ -122,8 +122,8 @@ const Register = () => {
             localStorage.setItem('user', JSON.stringify(response.data.user));
           }
           
-          toast.success('Welcome to MicroFinance System!');
-          navigate('/');
+          toast.success(t('Karibu kwenye Mfumo wa MicroFinance!'));
+          navigate('/app');
         } else {
           console.log('No tokens in response, trying login...');
           const loginResult = await login({
@@ -132,10 +132,10 @@ const Register = () => {
           });
           
           if (loginResult.success) {
-            toast.success('Welcome to MicroFinance System!');
-            navigate('/');
+            toast.success(t('Karibu kwenye Mfumo wa MicroFinance!'));
+            navigate('/app');
           } else {
-            toast.error('Auto-login failed. Please login manually.');
+            toast.error(t('Kuingia kiotomatiki kumeshindwa. Tafadhali ingia mwenyewe.'));
             navigate('/login');
           }
         }
@@ -149,7 +149,7 @@ const Register = () => {
             }
           });
         } else {
-          toast.error(response.data.message || 'Registration failed');
+          toast.error(response.data.message || t('Usajili umeshindwa'));
         }
       }
     } catch (error) {
@@ -173,12 +173,12 @@ const Register = () => {
         } else if (data.detail) {
           toast.error(data.detail);
         } else {
-          toast.error('Registration failed. Please check your information.');
+          toast.error(t('Usajili umeshindwa. Tafadhali angalia taarifa zako.'));
         }
       } else if (error.request) {
-        toast.error('No response from server. Please check your connection.');
+        toast.error(t('Hakuna majibu kutoka kwa seva. Tafadhali angalia muunganisho wako.'));
       } else {
-        toast.error(error.message || 'Registration failed. Please try again.');
+        toast.error(error.message || t('Usajili umeshindwa. Tafadhali jaribu tena.'));
       }
     } finally {
       setLoading(false);
@@ -193,21 +193,21 @@ const Register = () => {
             <span className="text-white text-3xl font-bold">M</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900">MicroFinance System</h2>
-          <p className="mt-2 text-gray-600">Create your account to get started</p>
+          <p className="mt-2 text-gray-600">{t('Unda akaunti yako kuanza')}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Create Account</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t('Unda Akaunti')}</h3>
             <Link to="/login" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-              Already have an account? Sign in
+              {t('Tayari una akaunti? Ingia')}
             </Link>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Jina la Kwanza')} *</label>
                 <input
                   type="text"
                   name="first_name"
@@ -217,13 +217,13 @@ const Register = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.first_name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="First name"
+                  placeholder={t('Jina la kwanza')}
                 />
                 {errors.first_name && <p className="mt-1 text-sm text-red-500">{errors.first_name}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Jina la Mwisho')} *</label>
                 <input
                   type="text"
                   name="last_name"
@@ -233,7 +233,7 @@ const Register = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.last_name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Last name"
+                  placeholder={t('Jina la mwisho')}
                 />
                 {errors.last_name && <p className="mt-1 text-sm text-red-500">{errors.last_name}</p>}
               </div>
@@ -241,7 +241,7 @@ const Register = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Jina la Mtumiaji')} *</label>
                 <input
                   type="text"
                   name="username"
@@ -251,13 +251,13 @@ const Register = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.username ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Choose a username"
+                  placeholder={t('Chagua jina la mtumiaji')}
                 />
                 {errors.username && <p className="mt-1 text-sm text-red-500">{errors.username}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Barua pepe')} *</label>
                 <input
                   type="email"
                   name="email"
@@ -267,7 +267,7 @@ const Register = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Enter your email"
+                  placeholder={t('Weka barua pepe yako')}
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
               </div>
@@ -275,7 +275,7 @@ const Register = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Nambari ya Simu')}</label>
                 <input
                   type="tel"
                   name="phone"
@@ -287,7 +287,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Jukumu')} *</label>
                 <select
                   name="role"
                   required
@@ -295,18 +295,18 @@ const Register = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <option value="officer">Loan Officer</option>
-                  <option value="manager">Branch Manager</option>
-                  <option value="teller">Teller</option>
-                  <option value="viewer">Viewer</option>
-                  <option value="admin">System Admin</option>
+                  <option value="officer">{t('Afisa Mikopo')}</option>
+                  <option value="manager">{t('Meneja wa Tawi')}</option>
+                  <option value="teller">{t('Mhazini')}</option>
+                  <option value="viewer">{t('Mtazamaji')}</option>
+                  <option value="admin">{t('Msimamizi wa Mfumo')}</option>
                 </select>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Branch {formData.role !== 'admin' && '*'}
+                {t('Tawi')} {formData.role !== 'admin' && '*'}
               </label>
               <select
                 name="branch"
@@ -315,7 +315,7 @@ const Register = () => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="">Select Branch</option>
+                <option value="">{t('Chagua Tawi')}</option>
                 {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name} - {branch.region}
@@ -326,7 +326,7 @@ const Register = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Nenosiri')} *</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -337,14 +337,14 @@ const Register = () => {
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Create a strong password"
+                    placeholder={t('Unda nenosiri imara')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? t('Ficha') : t('Onyesha')}
                   </button>
                 </div>
                 
@@ -362,7 +362,7 @@ const Register = () => {
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Use 8+ chars with uppercase, lowercase, number & special
+                      {t('Tumia herufi 8+ zenye kubwa, ndogo, nambari na alama')}
                     </p>
                   </div>
                 )}
@@ -370,7 +370,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('Thibitisha Nenosiri')} *</label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -381,14 +381,14 @@ const Register = () => {
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       errors.password2 ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Confirm your password"
+                    placeholder={t('Thibitisha nenosiri lako')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? 'Hide' : 'Show'}
+                    {showConfirmPassword ? t('Ficha') : t('Onyesha')}
                   </button>
                 </div>
                 {errors.password2 && <p className="mt-1 text-sm text-red-500">{errors.password2}</p>}
@@ -404,7 +404,7 @@ const Register = () => {
                 className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
               <label htmlFor="terms" className="text-sm text-gray-600">
-                I agree to the Terms and Conditions and Privacy Policy
+                {t('Ninakubali Sheria na Masharti na Sera ya Faragha')}
               </label>
             </div>
 
@@ -413,12 +413,12 @@ const Register = () => {
               disabled={loading}
               className="w-full py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? t('Inaunda akaunti...') : t('Unda Akaunti')}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">2026 MicroFinance System. All rights reserved.</p>
+            <p className="text-xs text-gray-500">2026 MicroFinance System. {t('Haki zote zimehifadhiwa.')}</p>
           </div>
         </div>
       </div>
