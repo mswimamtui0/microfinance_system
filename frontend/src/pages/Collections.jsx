@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { loanAPI, paymentAPI } from '../api';
+import { loanAPI } from '../api';
 import Loading from '../components/Common/Loading';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { Link } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 const Collections = () => {
   const [filter, setFilter] = useState('all');
   const [allSchedules, setAllSchedules] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
 
   // Fetch all loans
   const { data: loans, isLoading: loansLoading, refetch } = useQuery({
@@ -16,32 +16,26 @@ const Collections = () => {
     queryFn: () => loanAPI.getAll({ limit: 1000 }),
   });
 
-  // Fetch all payments
-  const { data: payments } = useQuery({
-    queryKey: ['all-payments'],
-    queryFn: () => paymentAPI.getAll({ limit: 1000 }),
-  });
-
-  // Process schedules from loans
+  // Fetch schedules for each loan
   useEffect(() => {
-    if (loans?.data?.results) {
+    const fetchAllSchedules = async () => {
+      if (!loans?.data?.results) return [];
+      
       const schedules = [];
-      loans.data.results.forEach(loan => {
-        // Check if loan has schedules
-        if (loan.schedules && loan.schedules.length > 0) {
-          loan.schedules.forEach(schedule => {
-            // Only include pending or overdue schedules
-            if (schedule.status === 'pending' || schedule.status === 'overdue' || schedule.status === 'partial') {
-              schedules.push({
-                ...schedule,
-                loan: loan,
-                customer: loan.customer_details || loan.customer || { first_name: 'Unknown', last_name: '' }
-              });
-            }
+      for (const loan of loans.data.results) {
+        try {
+          const response = await loanAPI.getSchedule(loan.id);
+          const loanSchedules = response.data || [];
+          loanSchedules.forEach(schedule => {
+            schedules.push({
+              ...schedule,
+              loan: loan,
+              customer: loan.customer_details || loan.customer || { first_name: 'Unknown', last_name: '' }
+            });
           });
-        } else {
-          // If no schedules, create a dummy schedule from loan data
-          // This ensures loans without schedules still appear
+        } catch (error) {
+          console.log(`No schedules for loan ${loan.loan_no}, creating fallback`);
+          // Fallback: create a schedule from loan data
           if (loan.status === 'active' || loan.status === 'disbursed') {
             schedules.push({
               id: `loan-${loan.id}`,
@@ -57,13 +51,19 @@ const Collections = () => {
             });
           }
         }
+      }
+      return schedules;
+    };
+
+    if (loans?.data?.results) {
+      fetchAllSchedules().then(schedules => {
+        setAllSchedules(schedules);
+        setLoadingSchedules(false);
       });
-      setAllSchedules(schedules);
-      setLoading(false);
     }
   }, [loans]);
 
-  if (loansLoading || loading) {
+  if (loansLoading || loadingSchedules) {
     return <Loading />;
   }
 
@@ -73,7 +73,7 @@ const Collections = () => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-  // Filter schedules based on selection
+  // Filter schedules
   const filteredSchedules = allSchedules.filter(item => {
     if (filter === 'today') {
       return item.due_date === todayStr;
@@ -98,29 +98,24 @@ const Collections = () => {
       name: 'Due Today', 
       count: dueToday.length,
       total: dueToday.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0),
-      color: '#f59e0b',
     },
     { 
       name: 'Due Tomorrow', 
       count: dueTomorrow.length,
       total: dueTomorrow.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0),
-      color: '#3b82f6',
     },
     { 
       name: 'Overdue', 
       count: overdue.length,
       total: overdue.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0),
-      color: '#ef4444',
     },
     { 
       name: 'Defaulters', 
       count: defaulters.length,
       total: defaulters.reduce((sum, l) => sum + (parseFloat(l.outstanding_balance) || 0), 0),
-      color: '#dc2626',
     },
   ];
 
-  // Get status color
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -136,132 +131,61 @@ const Collections = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Collections Dashboard</h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => refetch()} 
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Refresh Data
-          </button>
-        </div>
+        <button onClick={() => refetch()} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+          Refresh Data
+        </button>
       </div>
 
       {/* Stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px'
-      }}>
+      <div className="grid grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div key={stat.name} style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '16px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>{stat.name}</p>
-                <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>{stat.count}</p>
-                <p style={{ fontSize: '12px', color: '#6b7280' }}>{formatCurrency(stat.total)}</p>
-              </div>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: stat.color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '18px'
-              }}>
-                {stat.count}
-              </div>
-            </div>
+          <div key={stat.name} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-sm font-medium text-gray-500">{stat.name}</p>
+            <p className="text-2xl font-bold text-gray-900">{stat.count}</p>
+            <p className="text-sm text-gray-500">{formatCurrency(stat.total)}</p>
           </div>
         ))}
       </div>
 
       {/* Filter Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        background: 'white',
-        padding: '12px',
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb',
-        flexWrap: 'wrap'
-      }}>
+      <div className="flex gap-2 bg-white p-3 rounded-lg border border-gray-200">
         <button
           onClick={() => setFilter('all')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: filter === 'all' ? '#0284c7' : 'transparent',
-            color: filter === 'all' ? 'white' : '#4b5563',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'all' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
-          All Collections ({allSchedules.length})
+          All ({allSchedules.length})
         </button>
         <button
           onClick={() => setFilter('today')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: filter === 'today' ? '#f59e0b' : 'transparent',
-            color: filter === 'today' ? 'white' : '#4b5563',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'today' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
           Due Today ({dueToday.length})
         </button>
         <button
           onClick={() => setFilter('tomorrow')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: filter === 'tomorrow' ? '#3b82f6' : 'transparent',
-            color: filter === 'tomorrow' ? 'white' : '#4b5563',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'tomorrow' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
           Due Tomorrow ({dueTomorrow.length})
         </button>
         <button
           onClick={() => setFilter('overdue')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: filter === 'overdue' ? '#ef4444' : 'transparent',
-            color: filter === 'overdue' ? 'white' : '#4b5563',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'overdue' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
           Overdue ({overdue.length})
         </button>
         <button
           onClick={() => setFilter('defaulted')}
-          style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            background: filter === 'defaulted' ? '#dc2626' : 'transparent',
-            color: filter === 'defaulted' ? 'white' : '#4b5563',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            filter === 'defaulted' ? 'bg-red-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
         >
           Defaulters ({defaulters.length})
         </button>
@@ -269,83 +193,61 @@ const Collections = () => {
 
       {/* Collections Table */}
       {filteredSchedules.length > 0 ? (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          border: '1px solid #e5e7eb',
-          overflow: 'hidden'
-        }}>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: '#f9fafb' }}>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Customer</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Loan</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Installment</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Due Date</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Amount</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Penalty</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Total</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Installment</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Penalty</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSchedules.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ fontWeight: '500' }}>
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
                         {item.customer?.first_name || 'Unknown'} {item.customer?.last_name || ''}
-                      </span>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>{item.customer?.phone || ''}</div>
+                      </div>
+                      <div className="text-sm text-gray-500">{item.customer?.phone || ''}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.loan?.loan_no || 'N/A'}
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       #{item.installment_no}
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(item.due_date)}
                       {item.due_date === todayStr && (
-                        <span style={{
-                          marginLeft: '8px',
-                          padding: '2px 8px',
-                          background: '#fef3c7',
-                          borderRadius: '12px',
-                          fontSize: '10px',
-                          color: '#d97706'
-                        }}>
-                          Today
-                        </span>
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">Today</span>
                       )}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
                       {formatCurrency(item.total_due || 0)}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', color: '#ef4444' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">
                       {formatCurrency(item.penalty_amount || 0)}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right">
                       {formatCurrency((parseFloat(item.total_due) || 0) + (parseFloat(item.penalty_amount) || 0))}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
                         to={`/payments/new?loan=${item.loan?.id}`}
-                        style={{
-                          padding: '6px 16px',
-                          background: '#0284c7',
-                          color: 'white',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          fontSize: '14px',
-                          display: 'inline-block'
-                        }}
+                        className="px-3 py-1 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm"
                       >
                         Receive
                       </Link>
@@ -357,17 +259,9 @@ const Collections = () => {
           </div>
         </div>
       ) : (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '40px',
-          textAlign: 'center',
-          border: '1px solid #e5e7eb'
-        }}>
-          <p style={{ fontSize: '16px', color: '#6b7280' }}>No collection records found.</p>
-          <p style={{ fontSize: '14px', color: '#9ca3af', marginTop: '8px' }}>
-            Make sure you have active loans with repayment schedules.
-          </p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-gray-500">No collection records found.</p>
+          <p className="text-sm text-gray-400 mt-2">Make sure you have active loans with repayment schedules.</p>
         </div>
       )}
     </div>
