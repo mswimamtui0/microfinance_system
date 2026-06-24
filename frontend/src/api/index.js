@@ -105,6 +105,10 @@ export const loanAPI = {
     console.log('Get loans API called');
     return api.get('/loans/', { params });
   },
+  getLoanRealTimeStatus: (id) => {
+    console.log('Getting real-time status for loan:', id);
+    return api.get(`/loans/${id}/realtime_status/`);
+  },
   getById: (id) => {
     console.log('Get loan by ID:', id);
     return api.get(`/loans/${id}/`);
