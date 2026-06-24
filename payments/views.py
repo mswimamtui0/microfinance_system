@@ -18,25 +18,45 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        loan_id = self.request.query_params.get('loan')
-        if loan_id:
-            queryset = queryset.filter(loan_id=loan_id)
-        
-        customer_id = self.request.query_params.get('customer')
-        if customer_id:
-            queryset = queryset.filter(loan__customer_id=customer_id)
-        
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        if start_date:
-            queryset = queryset.filter(payment_date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(payment_date__lte=end_date)
-        
-        return queryset
+    queryset = super().get_queryset()
+    user = self.request.user
     
+    # Filter based on user role
+    if user.is_superuser or user.role == 'admin':
+        pass
+    elif user.role == 'manager':
+        if user.branch:
+            queryset = queryset.filter(loan__branch=user.branch)
+        else:
+            queryset = queryset.none()
+    elif user.role == 'officer':
+        queryset = queryset.filter(loan__created_by=user)
+    elif user.role == 'teller':
+        if user.branch:
+            queryset = queryset.filter(loan__branch=user.branch)
+        else:
+            queryset = queryset.none()
+    elif user.role == 'viewer':
+        pass
+    
+    # Additional filters
+    loan_id = self.request.query_params.get('loan')
+    if loan_id:
+        queryset = queryset.filter(loan_id=loan_id)
+    
+    customer_id = self.request.query_params.get('customer')
+    if customer_id:
+        queryset = queryset.filter(loan__customer_id=customer_id)
+    
+    start_date = self.request.query_params.get('start_date')
+    end_date = self.request.query_params.get('end_date')
+    if start_date:
+        queryset = queryset.filter(payment_date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(payment_date__lte=end_date)
+    
+    return queryset
+        
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """Create a new payment"""

@@ -1,20 +1,45 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db import transaction
+from rest_framework.permissions import IsAuthenticated
+from django.db import models
 from django.utils import timezone
 from .models import Customer, Guarantor
 from .serializers import CustomerSerializer, GuarantorSerializer
-from django.db import models  # Add this import
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
         
-        # Search
+        # Filter based on user role
+        if user.is_superuser or user.role == 'admin':
+            # Admin sees all customers
+            pass
+        elif user.role == 'manager':
+            # Manager sees only their branch customers
+            if user.branch:
+                queryset = queryset.filter(branch=user.branch)
+            else:
+                queryset = queryset.none()  # No branch assigned
+        elif user.role == 'officer':
+            # Officer sees only customers they created
+            queryset = queryset.filter(created_by=user)
+        elif user.role == 'teller':
+            # Teller sees all branch customers
+            if user.branch:
+                queryset = queryset.filter(branch=user.branch)
+            else:
+                queryset = queryset.none()
+        elif user.role == 'viewer':
+            # Viewer sees all (read-only)
+            pass
+        
+        # Search filter
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(
@@ -25,30 +50,25 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 models.Q(nida_number__icontains=search)
             )
         
-        # Filter by status
+        # Status filter
         status = self.request.query_params.get('status')
         if status:
             queryset = queryset.filter(status=status)
         
-        # Filter by risk level
+        # Risk level filter
         risk_level = self.request.query_params.get('risk_level')
         if risk_level:
             queryset = queryset.filter(risk_level=risk_level)
         
-        # Filter by branch
-        branch_id = self.request.query_params.get('branch')
-        if branch_id:
-            queryset = queryset.filter(branch_id=branch_id)
-        
         return queryset
     
     def perform_create(self, serializer):
-        # Generate customer number
         import uuid
         customer_no = f"CUST{timezone.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:4].upper()}"
         serializer.save(
             created_by=self.request.user,
-            customer_no=customer_no
+            customer_no=customer_no,
+            branch=self.request.user.branch  # Auto-assign to user's branch
         )
     
     @action(detail=True, methods=['get'])
@@ -63,7 +83,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
         customer = self.get_object()
         data = request.data
         data['customer'] = customer.id
-        
         serializer = GuarantorSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

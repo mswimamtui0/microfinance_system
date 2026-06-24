@@ -21,31 +21,42 @@ class LoanViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-        
-        # Filter based on user role
-        if user.role == 'admin' or user.is_superuser:
-            pass  # Admin sees all
-        elif user.role == 'manager':
+    queryset = super().get_queryset()
+    user = self.request.user
+    
+    # Filter based on user role
+    if user.is_superuser or user.role == 'admin':
+        # Admin sees all loans
+        pass
+    elif user.role == 'manager':
+        # Manager sees only their branch loans
+        if user.branch:
             queryset = queryset.filter(branch=user.branch)
-        elif user.role == 'officer':
-            queryset = queryset.filter(customer__created_by=user)
-        elif user.role == 'teller':
+        else:
+            queryset = queryset.none()
+    elif user.role == 'officer':
+        # Officer sees only loans they created
+        queryset = queryset.filter(created_by=user)
+    elif user.role == 'teller':
+        # Teller sees all branch loans
+        if user.branch:
             queryset = queryset.filter(branch=user.branch)
-        elif user.role == 'viewer':
-            pass  # Viewer sees all but read-only
-        
-        # Additional filters
-        status_filter = self.request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-        
-        customer_id = self.request.query_params.get('customer')
-        if customer_id:
-            queryset = queryset.filter(customer_id=customer_id)
-        
-        return queryset
+        else:
+            queryset = queryset.none()
+    elif user.role == 'viewer':
+        # Viewer sees all (read-only)
+        pass
+    
+    # Additional filters
+    status_filter = self.request.query_params.get('status')
+    if status_filter:
+        queryset = queryset.filter(status=status_filter)
+    
+    customer_id = self.request.query_params.get('customer')
+    if customer_id:
+        queryset = queryset.filter(customer_id=customer_id)
+    
+    return queryset
     
     @transaction.atomic
     def create(self, request, *args, **kwargs):
