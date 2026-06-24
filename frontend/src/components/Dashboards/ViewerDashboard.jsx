@@ -45,22 +45,22 @@ const ViewerDashboard = ({ user }) => {
 
   const stats = [
     {
-      name: t('Total Loans'),
+      name: t('Jumla ya Mikopo'),
       value: portfolio?.data?.total_loans || 0,
       color: '#0ea5e9',
     },
     {
-      name: t('Active Loans'),
+      name: t('Mikopo Inayoendelea'),
       value: portfolio?.data?.active_loans || 0,
       color: '#22c55e',
     },
     {
-      name: t('Overdue'),
+      name: t('Imechelewa'),
       value: portfolio?.data?.overdue_loans || 0,
       color: '#ef4444',
     },
     {
-      name: t('Total Portfolio'),
+      name: t('Jumla ya Kwingineko'),
       value: formatCurrency(portfolio?.data?.total_portfolio || 0),
       color: '#8b5cf6',
     },
@@ -70,14 +70,14 @@ const ViewerDashboard = ({ user }) => {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: t('Disbursements'),
+        label: t('Mikopo Iliyotolewa'),
         data: [12000000, 15000000, 18000000, 22000000, 25000000, 30000000],
         backgroundColor: 'rgba(14, 165, 233, 0.8)',
         borderColor: 'rgb(14, 165, 233)',
         borderWidth: 2,
       },
       {
-        label: t('Collections'),
+        label: t('Makusanyo'),
         data: [8000000, 10000000, 12000000, 15000000, 18000000, 22000000],
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderColor: 'rgb(34, 197, 94)',
@@ -87,7 +87,7 @@ const ViewerDashboard = ({ user }) => {
   };
 
   const doughnutData = {
-    labels: [t('Performing'), t('Overdue'), t('Defaulted')],
+    labels: [t('Inaendelea Vizuri'), t('Imechelewa'), t('Imeshindwa')],
     datasets: [
       {
         data: [portfolio?.data?.performing || 75, portfolio?.data?.overdue_rate || 15, portfolio?.data?.default_rate || 10],
@@ -135,9 +135,9 @@ const ViewerDashboard = ({ user }) => {
   };
 
   const quickActions = [
-    { name: t('View Reports'), href: '/reports', color: '#0ea5e9' },
-    { name: t('Dashboard'), href: '/', color: '#3b82f6' },
-    { name: t('Download Reports'), href: '/reports/export', color: '#22c55e' },
+    { name: t('Tazama Ripoti'), href: '/reports', color: '#0ea5e9' },
+    { name: t('Dashibodi'), href: '/', color: '#3b82f6' },
+    { name: t('Pakua Ripoti'), href: '/reports/export', color: '#22c55e' },
   ];
 
   return (
@@ -146,17 +146,17 @@ const ViewerDashboard = ({ user }) => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-2xl font-bold">
-              {t('Welcome')}, {user?.first_name || user?.username}!
+              {t('Karibu')}, {user?.first_name || user?.username}!
             </h1>
-            <p style={{ opacity: 0.9, marginTop: '4px' }}>{t('Viewer')} • {user?.branch_name || t('All Branches')}</p>
+            <p style={{ opacity: 0.9, marginTop: '4px' }}>{t('Mtazamaji')} • {user?.branch_name || t('Tawi Zote')}</p>
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>{t('Viewer')}</span>
-              <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>{t('Read-Only')}</span>
+              <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>{t('Mtazamaji')}</span>
+              <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>{t('Ufikiaji wa Kusoma Tu')}</span>
             </div>
           </div>
           <div style={{ marginTop: '16px' }}>
             <button style={{ padding: '8px 16px', background: 'white', color: '#374151', borderRadius: '8px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>
-              {t('Download Reports')}
+              {t('Pakua Ripoti')}
             </button>
           </div>
         </div>
@@ -172,7 +172,7 @@ const ViewerDashboard = ({ user }) => {
       </div>
 
       <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Quick Actions')}</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Vitendo vya Haraka')}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
           {quickActions.map((action) => (
             <Link key={action.name} to={action.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '12px', textDecoration: 'none', color: '#374151', background: 'white' }}>
@@ -187,58 +187,43 @@ const ViewerDashboard = ({ user }) => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('System Performance')}</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Utendaji wa Mfumo')}</h3>
           <div style={{ height: '300px' }}>
             <Bar data={chartData} options={barOptions} />
           </div>
         </div>
         <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Portfolio Quality')}</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Ubora wa Kwingineko')}</h3>
           <div style={{ height: '250px' }}>
             <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
-            <div><p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolio?.data?.performing || 75}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Performing')}</p></div>
-            <div><p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolio?.data?.overdue_rate || 15}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Overdue')}</p></div>
-            <div><p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolio?.data?.default_rate || 10}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Defaulted')}</p></div>
+            <div><p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolio?.data?.performing || 75}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Inaendelea Vizuri')}</p></div>
+            <div><p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolio?.data?.overdue_rate || 15}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Imechelewa')}</p></div>
+            <div><p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolio?.data?.default_rate || 10}%</p><p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Imeshindwa')}</p></div>
           </div>
         </div>
       </div>
 
       <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Recent Loans')}</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('Loan No')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('Customer')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('Amount')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('Status')}</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loans?.data?.results?.slice(0, 5).map((loan) => (
-                <tr key={loan.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{loan.loan_no}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {loan.customer_details?.first_name} {loan.customer_details?.last_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(loan.principal)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full
-                      ${loan.status === 'active' ? 'bg-green-100 text-green-800' : ''}
-                      ${loan.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      ${loan.status === 'defaulted' ? 'bg-red-100 text-red-800' : ''}
-                      ${loan.status === 'paid' ? 'bg-blue-100 text-blue-800' : ''}
-                    `}>
-                      {t(loan.status)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Muhtasari wa Mfumo')}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', textAlign: 'center' }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>{portfolio?.data?.total_customers || 0}</p>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Jumla ya Wateja')}</p>
+          </div>
+          <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', textAlign: 'center' }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>{portfolio?.data?.active_loans || 0}</p>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Mikopo Inayoendelea')}</p>
+          </div>
+          <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', textAlign: 'center' }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>{formatCurrency(portfolio?.data?.total_portfolio || 0)}</p>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Jumla ya Kwingineko')}</p>
+          </div>
+          <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', textAlign: 'center' }}>
+            <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>{portfolio?.data?.collection_rate || 0}%</p>
+            <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Kiwango cha Makusanyo')}</p>
+          </div>
         </div>
       </div>
     </div>
