@@ -73,7 +73,7 @@ const PublicHomepage = () => {
 
       {/* Hero Section with Background Image - BLUE OVERLAY REMOVED */}
       <section style={{...styles.hero, backgroundImage: `url(${ceoImage})`}}>
-        {/* heroOverlay REMOVED - no blue overlay */}
+        
         <div style={styles.heroContent}>
           <div style={styles.heroText}>
             <h1 style={styles.heroTitle}>
