@@ -6,6 +6,7 @@ import Loading from '../components/Common/Loading';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const Payments = () => {
   const { t } = useTranslation();
@@ -13,6 +14,15 @@ const Payments = () => {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  const loanId = searchParams.get('loan');
+  if (loanId) {
+    setSelectedLoan({ id: parseInt(loanId) });
+    setShowForm(true);
+  }
+}, [searchParams]);
 
   const queryClient = useQueryClient();
 

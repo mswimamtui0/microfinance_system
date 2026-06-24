@@ -313,20 +313,21 @@ const Collections = () => {
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <Link
-                      to={`/payments/new?loan=${item.loan?.id}`}
-                      style={{
-                        padding: '6px 16px',
-                        background: '#0284c7',
-                        color: 'white',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        fontSize: '14px',
-                        display: 'inline-block'
-                      }}
-                    >
-                      {t('Receive')}
-                    </Link>
+                    // In Collections.jsx, update the link
+<Link
+  to={`/payments/new?loan=${item.loan?.id}`}
+  style={{
+    padding: '6px 16px',
+    background: '#0284c7',
+    color: 'white',
+    borderRadius: '6px',
+    textDecoration: 'none',
+    fontSize: '14px',
+    display: 'inline-block'
+  }}
+>
+  Receive
+</Link>
                   </td>
                 </tr>
               ))}

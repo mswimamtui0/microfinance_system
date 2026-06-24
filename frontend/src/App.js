@@ -3,8 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { useTranslation } from 'react-i18next';  // ✅ ADD THIS
+
+// Layout
 import DashboardLayout from './components/Layout/DashboardLayout';
+
+// Pages
 import PublicHomepage from './pages/PublicHomepage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,7 +17,6 @@ import Customers from './pages/Customers';
 import Payments from './pages/Payments';
 import Collections from './pages/Collections';
 import Reports from './pages/Reports';
-import './i18n/index';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,17 +41,18 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
-  const { t } = useTranslation();  // ✅ ADD THIS
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
           <Toaster position="top-right" />
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<PublicHomepage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
+            {/* Private Routes */}
             <Route path="/app" element={
               <PrivateRoute>
                 <DashboardLayout>
@@ -64,6 +67,27 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             } />
+            <Route path="/loans/new" element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <Loans />
+                </DashboardLayout>
+              </PrivateRoute>
+            } />
+            <Route path="/loans/pending" element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <Loans />
+                </DashboardLayout>
+              </PrivateRoute>
+            } />
+            <Route path="/loans/approved" element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <Loans />
+                </DashboardLayout>
+              </PrivateRoute>
+            } />
             <Route path="/customers" element={
               <PrivateRoute>
                 <DashboardLayout>
@@ -72,6 +96,13 @@ function App() {
               </PrivateRoute>
             } />
             <Route path="/payments" element={
+              <PrivateRoute>
+                <DashboardLayout>
+                  <Payments />
+                </DashboardLayout>
+              </PrivateRoute>
+            } />
+            <Route path="/payments/new" element={
               <PrivateRoute>
                 <DashboardLayout>
                   <Payments />
