@@ -24,35 +24,27 @@ class LoanViewSet(viewsets.ModelViewSet):
     queryset = super().get_queryset()
     user = self.request.user
     
+    # Admin can see all loans
     if user.is_superuser or user.role == 'admin':
         pass
+    # Manager sees only their branch
     elif user.role == 'manager':
-        # Manager sees only their branch loans
         if user.branch:
             queryset = queryset.filter(branch=user.branch)
         else:
             queryset = queryset.none()
+    # Officer sees only loans they created
     elif user.role == 'officer':
-        # Officer sees only loans they created
         queryset = queryset.filter(created_by=user)
+    # Teller sees all loans in their branch
     elif user.role == 'teller':
-        # Teller sees all branch loans
         if user.branch:
             queryset = queryset.filter(branch=user.branch)
         else:
             queryset = queryset.none()
+    # Viewer sees all loans (read-only)
     elif user.role == 'viewer':
-        # Viewer sees all (read-only)
         pass
-    
-    # Additional filters
-    status_filter = self.request.query_params.get('status')
-    if status_filter:
-        queryset = queryset.filter(status=status_filter)
-    
-    customer_id = self.request.query_params.get('customer')
-    if customer_id:
-        queryset = queryset.filter(customer_id=customer_id)
     
     return queryset
     
