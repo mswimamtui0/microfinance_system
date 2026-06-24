@@ -1,5 +1,4 @@
 from django.contrib import admin
-
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -7,14 +6,12 @@ from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from accounts.views import CustomTokenObtainPairView
-from accounts.views_api import RegisterView, BranchesView, ProfileView
+from accounts.views import CustomTokenObtainPairView, AuthViewSet
 from loans.views import LoanViewSet, LoanProductViewSet
 from customers.views import CustomerViewSet
 from payments.views import PaymentViewSet
 from reports.views import PortfolioReportView, CollectionsReportView
 
-# API Router for main models
 router = DefaultRouter()
 router.register(r'loans', LoanViewSet, basename='loan')
 router.register(r'loan-products', LoanProductViewSet, basename='loan-product')
@@ -37,12 +34,10 @@ urlpatterns = [
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
-    # Custom auth endpoints using APIView
-    path('api/auth/register/', RegisterView.as_view(), name='auth-register'),
-    path('api/auth/branches/', BranchesView.as_view(), name='auth-branches'),
-    path('api/auth/profile/', ProfileView.as_view(), name='auth-profile'),
+    # Custom auth endpoints
+    path('api/auth/', include('accounts.urls')),
     
-    # API router for main models
+    # API router
     path('api/', include(router.urls)),
     
     # Reports
