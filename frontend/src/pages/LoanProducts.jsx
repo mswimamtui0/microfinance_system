@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productAPI } from '../api';
 import Loading from '../components/Common/Loading';
 import toast from 'react-hot-toast';
-
+import { useTranslation } from 'react-i18next';
 
 const LoanProducts = () => {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const queryClient = useQueryClient();

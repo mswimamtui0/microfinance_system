@@ -4,13 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../api';
 import { useTranslation } from 'react-i18next';
 
-// Inside the component:
-const { t } = useTranslation();
 
-// Replace static text with t():
-// "Welcome" → {t('Welcome')}
-// "Dashboard" → {t('Dashboard')}
-// "Total Portfolio" → {t('Total Portfolio')}
 import { Link } from 'react-router-dom';
 import { 
   UsersIcon, 
@@ -56,6 +50,7 @@ ChartJS.register(
 );
 
 const HomeDashboard = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [dateRange] = useState({
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
