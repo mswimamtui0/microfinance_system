@@ -72,18 +72,29 @@ const LoanDetails = ({ loan, onClose }) => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Fixed safeFormatCurrency function
+  // Robust safeFormatCurrency
   const safeFormatCurrency = (amount) => {
-    // Convert to number if it's a string
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    // If amount is undefined, null, or empty string
+    if (amount === undefined || amount === null || amount === '') {
+      return 'TZS 0.00';
+    }
+    
+    // Convert string to number if needed
+    let num;
+    if (typeof amount === 'string') {
+      const cleaned = amount.replace(/[^0-9.\-]/g, '');
+      num = parseFloat(cleaned);
+    } else {
+      num = amount;
+    }
     
     // Check if it's a valid number
-    if (num === undefined || num === null || isNaN(num)) {
+    if (isNaN(num) || typeof num !== 'number') {
       return 'TZS 0.00';
     }
     
     // For very small amounts, show more decimals
-    if (Math.abs(num) < 1) {
+    if (Math.abs(num) < 1 && num !== 0) {
       return `TZS ${num.toFixed(4)}`;
     }
     
