@@ -120,7 +120,11 @@ const ManagerDashboard = ({ user }) => {
     labels: ['Performing', 'Overdue', 'Defaulted'],
     datasets: [
       {
-        data: [portfolio?.data?.performing || 80, portfolio?.data?.overdue_rate || 12, portfolio?.data?.default_rate || 8],
+        data: [
+          portfolio?.data?.performing || 80,
+          portfolio?.data?.overdue_rate || 12,
+          portfolio?.data?.default_rate || 8,
+        ],
         backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
         borderWidth: 0,
       },
@@ -223,7 +227,7 @@ const ManagerDashboard = ({ user }) => {
         {/* Bar Chart */}
         <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Branch Performance</h3>
-          <div style={{ height: '300px' }}>
+          <div style={{ height: '300px', position: 'relative' }}>
             <Bar data={barChartData} options={barOptions} />
           </div>
         </div>
@@ -231,7 +235,7 @@ const ManagerDashboard = ({ user }) => {
         {/* Doughnut Chart */}
         <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Portfolio Quality</h3>
-          <div style={{ height: '250px' }}>
+          <div style={{ height: '250px', position: 'relative' }}>
             <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>

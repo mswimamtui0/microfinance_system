@@ -172,7 +172,7 @@ const OfficerDashboard = ({ user }) => {
         {/* Bar Chart */}
         <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>My Performance</h3>
-          <div style={{ height: '300px' }}>
+          <div style={{ height: '300px', position: 'relative' }}>
             <Bar data={chartData} options={barOptions} />
           </div>
         </div>

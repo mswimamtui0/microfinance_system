@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import { formatCurrency } from '../../utils/formatters';
 import Loading from '../Common/Loading';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../../api';
 
+// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -36,44 +37,30 @@ const AdminDashboard = ({ user }) => {
     end: new Date().toISOString().slice(0, 10),
   });
 
-  // Fetch portfolio data
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
     queryKey: ['portfolio-report', dateRange],
-    queryFn: () => {
-      console.log('Fetching portfolio data...');
-      return reportAPI.getPortfolio(dateRange);
-    },
+    queryFn: () => reportAPI.getPortfolio(dateRange),
   });
 
-  console.log('Portfolio data:', portfolio?.data);
-
-  // Fetch recent loans
   const { data: loans, isLoading: loansLoading } = useQuery({
     queryKey: ['recent-loans'],
-    queryFn: () => {
-      console.log('Fetching recent loans...');
-      return loanAPI.getAll({ limit: 10 });
-    },
+    queryFn: () => loanAPI.getAll({ limit: 10 }),
   });
 
-  // Fetch recent customers
   const { data: customers, isLoading: customersLoading } = useQuery({
     queryKey: ['recent-customers'],
-    queryFn: () => {
-      console.log('Fetching recent customers...');
-      return customerAPI.getAll({ limit: 10 });
-    },
+    queryFn: () => customerAPI.getAll({ limit: 10 }),
+  });
+
+  const { data: paymentSummary } = useQuery({
+    queryKey: ['payment-summary'],
+    queryFn: () => paymentAPI.getSummary(),
   });
 
   if (portfolioLoading || loansLoading || customersLoading) {
     return <Loading />;
   }
 
-  // Check if we have data
-  const hasData = portfolio?.data && Object.keys(portfolio.data).length > 0;
-  console.log('Has portfolio data:', hasData);
-
-  // Stats data
   const stats = [
     {
       name: 'Total Portfolio',
@@ -119,7 +106,6 @@ const AdminDashboard = ({ user }) => {
     },
   ];
 
-  // Bar Chart Data - Financial Performance
   const barChartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
@@ -140,15 +126,14 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  // Doughnut Chart Data - Portfolio Quality
   const doughnutData = {
     labels: ['Performing', 'Overdue', 'Defaulted'],
     datasets: [
       {
         data: [
-          portfolio?.data?.performing || 75, 
-          portfolio?.data?.overdue_rate || 15, 
-          portfolio?.data?.default_rate || 10
+          portfolio?.data?.performing || 75,
+          portfolio?.data?.overdue_rate || 15,
+          portfolio?.data?.default_rate || 10,
         ],
         backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
         borderWidth: 0,
@@ -156,7 +141,6 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  // Line Chart Data - Growth Metrics
   const lineData = {
     labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
     datasets: [
@@ -240,6 +224,15 @@ const AdminDashboard = ({ user }) => {
     },
   };
 
+  const quickActions = [
+    { name: 'Manage Users', href: '/admin/users', color: '#8b5cf6' },
+    { name: 'System Settings', href: '/admin/settings', color: '#6b7280' },
+    { name: 'Audit Logs', href: '/admin/audit', color: '#6b7280' },
+    { name: 'Export Reports', href: '/reports/export', color: '#22c55e' },
+    { name: 'Manage Branches', href: '/admin/branches', color: '#0ea5e9' },
+    { name: 'New Loan', href: '/loans/new', color: '#0ea5e9' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -316,168 +309,36 @@ const AdminDashboard = ({ user }) => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '12px'
         }}>
-          <Link to="/admin/users" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#8b5cf6',
+          {quickActions.map((action) => (
+            <Link key={action.name} to={action.href} style={{
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
+              padding: '16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              color: '#374151',
+              background: 'white',
+              transition: 'background 0.2s'
             }}>
-              U
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Manage Users</span>
-          </Link>
-          <Link to="/admin/settings" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#6b7280',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}>
-              S
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>System Settings</span>
-          </Link>
-          <Link to="/admin/audit" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#6b7280',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}>
-              A
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Audit Logs</span>
-          </Link>
-          <Link to="/reports/export" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#22c55e',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}>
-              E
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Export Reports</span>
-          </Link>
-          <Link to="/admin/branches" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#0ea5e9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}>
-              B
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Manage Branches</span>
-          </Link>
-          <Link to="/loans/new" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            textDecoration: 'none',
-            color: '#374151',
-            background: 'white'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#0ea5e9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}>
-              N
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>New Loan</span>
-          </Link>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: action.color,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '18px'
+              }}>
+                {action.name.charAt(0)}
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
@@ -503,7 +364,7 @@ const AdminDashboard = ({ user }) => {
               <option>Last 6 Months</option>
             </select>
           </div>
-          <div style={{ height: '300px' }}>
+          <div style={{ height: '300px', position: 'relative' }}>
             <Bar data={barChartData} options={barOptions} />
           </div>
         </div>
@@ -517,7 +378,7 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Portfolio Quality</h3>
-          <div style={{ height: '250px' }}>
+          <div style={{ height: '250px', position: 'relative' }}>
             <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
@@ -546,7 +407,7 @@ const AdminDashboard = ({ user }) => {
         border: '1px solid #e5e7eb'
       }}>
         <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Growth Metrics</h3>
-        <div style={{ height: '250px' }}>
+        <div style={{ height: '250px', position: 'relative' }}>
           <Line data={lineData} options={lineOptions} />
         </div>
       </div>
