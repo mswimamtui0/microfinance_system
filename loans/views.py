@@ -24,9 +24,7 @@ class LoanViewSet(viewsets.ModelViewSet):
     queryset = super().get_queryset()
     user = self.request.user
     
-    # Filter based on user role
     if user.is_superuser or user.role == 'admin':
-        # Admin sees all loans
         pass
     elif user.role == 'manager':
         # Manager sees only their branch loans
