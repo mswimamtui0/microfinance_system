@@ -87,21 +87,17 @@ class CollectionsReportView(APIView):
         
         total_collected = payments.aggregate(total=Sum('amount_paid'))['total'] or 0
         
-        # Expected collections from active loans
         expected = Loan.objects.filter(status='active').aggregate(
             total=Sum('total_payable')
         )['total'] or 0
         
-        # Overdue amount
         overdue_amount = Loan.objects.filter(
             is_overdue=True
         ).aggregate(total=Sum('outstanding_balance'))['total'] or 0
         
         efficiency = (total_collected / expected * 100) if expected > 0 else 0
         
-        # Weekly/Monthly breakdown
-        from datetime import timedelta
-        from django.db.models.functions import TruncMonth, TruncWeek
+        from django.db.models.functions import TruncMonth
         
         monthly_collections = payments.annotate(
             month=TruncMonth('payment_date')

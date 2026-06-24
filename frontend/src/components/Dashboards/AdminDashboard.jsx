@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,15 +11,13 @@ import {
   Legend,
   ArcElement,
   PointElement,
-  LineElement,
-  Filler,
+  LineElement
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { formatCurrency } from '../../utils/formatters';
 import Loading from '../Common/Loading';
 import { reportAPI, loanAPI, customerAPI, paymentAPI } from '../../api';
 
-// Register ChartJS components with Filler
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -30,79 +27,91 @@ ChartJS.register(
   Legend,
   ArcElement,
   PointElement,
-  LineElement,
-  Filler,
+  LineElement
 );
 
 const AdminDashboard = ({ user }) => {
-  const { t } = useTranslation();
   const [dateRange] = useState({
     start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
     end: new Date().toISOString().slice(0, 10),
   });
 
+  // Fetch portfolio data
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
     queryKey: ['portfolio-report', dateRange],
-    queryFn: () => reportAPI.getPortfolio(dateRange),
+    queryFn: () => {
+      console.log('Fetching portfolio data...');
+      return reportAPI.getPortfolio(dateRange);
+    },
   });
 
+  console.log('Portfolio data:', portfolio?.data);
+
+  // Fetch recent loans
   const { data: loans, isLoading: loansLoading } = useQuery({
     queryKey: ['recent-loans'],
-    queryFn: () => loanAPI.getAll({ limit: 10 }),
+    queryFn: () => {
+      console.log('Fetching recent loans...');
+      return loanAPI.getAll({ limit: 10 });
+    },
   });
 
+  // Fetch recent customers
   const { data: customers, isLoading: customersLoading } = useQuery({
     queryKey: ['recent-customers'],
-    queryFn: () => customerAPI.getAll({ limit: 10 }),
-  });
-
-  const { data: paymentSummary } = useQuery({
-    queryKey: ['payment-summary'],
-    queryFn: () => paymentAPI.getSummary(),
+    queryFn: () => {
+      console.log('Fetching recent customers...');
+      return customerAPI.getAll({ limit: 10 });
+    },
   });
 
   if (portfolioLoading || loansLoading || customersLoading) {
     return <Loading />;
   }
 
+  // Check if we have data
+  const hasData = portfolio?.data && Object.keys(portfolio.data).length > 0;
+  console.log('Has portfolio data:', hasData);
+
+  // Stats data
   const stats = [
     {
-      name: t('Jumla ya Kwingineko'),
+      name: 'Total Portfolio',
       value: formatCurrency(portfolio?.data?.total_portfolio || 0),
       change: '+12.5%',
       changeType: 'positive',
       color: '#0ea5e9',
     },
     {
-      name: t('Mikopo Inayoendelea'),
+      name: 'Active Loans',
       value: portfolio?.data?.active_loans || 0,
       change: '+5.2%',
       changeType: 'positive',
       color: '#22c55e',
     },
     {
-      name: t('Jumla ya Wateja'),
+      name: 'Total Customers',
       value: portfolio?.data?.total_customers || 0,
       change: '+8.1%',
       changeType: 'positive',
       color: '#8b5cf6',
     },
     {
-      name: t('Jumla ya Matawi'),
+      name: 'Total Branches',
       value: 5,
       change: '0%',
       changeType: 'neutral',
       color: '#f59e0b',
     },
     {
-      name: t('Kiwango cha Makusanyo'),
+      name: 'Collection Rate',
       value: `${portfolio?.data?.collection_rate || 0}%`,
       change: portfolio?.data?.collection_rate > 85 ? '+3.2%' : '-2.1%',
       changeType: portfolio?.data?.collection_rate > 85 ? 'positive' : 'negative',
       color: '#6366f1',
     },
     {
-      name: t('Mikopo Iliyochelewa'),
+      name: 'Overdue Loans',
       value: portfolio?.data?.overdue_loans || 0,
       change: '-2.5%',
       changeType: 'positive',
@@ -110,44 +119,49 @@ const AdminDashboard = ({ user }) => {
     },
   ];
 
-  const chartData = {
+  // Bar Chart Data - Financial Performance
+  const barChartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
-        label: t('Mikopo Iliyotolewa'),
+        label: 'Disbursements',
         data: [12000000, 15000000, 18000000, 22000000, 25000000, 30000000, 28000000, 35000000, 32000000, 38000000, 40000000, 45000000],
         backgroundColor: 'rgba(14, 165, 233, 0.8)',
         borderColor: 'rgb(14, 165, 233)',
         borderWidth: 2,
-        fill: false,
       },
       {
-        label: t('Makusanyo'),
+        label: 'Collections',
         data: [8000000, 10000000, 12000000, 15000000, 18000000, 22000000, 25000000, 28000000, 30000000, 32000000, 35000000, 38000000],
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderColor: 'rgb(34, 197, 94)',
         borderWidth: 2,
-        fill: false,
       },
     ],
   };
 
+  // Doughnut Chart Data - Portfolio Quality
   const doughnutData = {
-    labels: [t('Inaendelea Vizuri'), t('Imechelewa'), t('Imeshindwa')],
+    labels: ['Performing', 'Overdue', 'Defaulted'],
     datasets: [
       {
-        data: [portfolio?.data?.performing || 75, portfolio?.data?.overdue_rate || 15, portfolio?.data?.default_rate || 10],
+        data: [
+          portfolio?.data?.performing || 75, 
+          portfolio?.data?.overdue_rate || 15, 
+          portfolio?.data?.default_rate || 10
+        ],
         backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
         borderWidth: 0,
       },
     ],
   };
 
+  // Line Chart Data - Growth Metrics
   const lineData = {
-    labels: [t('Wiki 1'), t('Wiki 2'), t('Wiki 3'), t('Wiki 4')],
+    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
     datasets: [
       {
-        label: t('Wateja Wapya'),
+        label: 'New Customers',
         data: [12, 19, 15, 22],
         borderColor: 'rgb(14, 165, 233)',
         backgroundColor: 'rgba(14, 165, 233, 0.1)',
@@ -155,7 +169,7 @@ const AdminDashboard = ({ user }) => {
         tension: 0.4,
       },
       {
-        label: t('Mikopo Mpya'),
+        label: 'New Loans',
         data: [8, 12, 10, 18],
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -165,63 +179,66 @@ const AdminDashboard = ({ user }) => {
     ],
   };
 
-  const quickActions = [
-    { 
-      name: t('Simamia Watumiaji'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/auth/user/', 
-      color: '#8b5cf6' 
+  const barOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          font: {
+            size: 12,
+          },
+        },
+      },
     },
-    { 
-      name: t('Mipangilio ya Mfumo'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/', 
-      color: '#6b7280' 
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return 'TZS ' + (value / 1000000).toFixed(0) + 'M';
+          },
+        },
+      },
     },
-    { 
-      name: t('Rekodi za Ukaguzi'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/audit/auditlog/', 
-      color: '#6b7280' 
-    },
-    { 
-      name: t('Hamisha Ripoti'), 
-      href: '#', 
-      color: '#22c55e',
-      onClick: () => alert(t('Hamisha ripoti inakuja hivi karibuni!'))
-    },
-    { 
-      name: t('Simamia Matawi'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/branches/branch/', 
-      color: '#0ea5e9' 
-    },
-    { 
-      name: t('Mkopo Mpya'), 
-      href: '/loans/new', 
-      color: '#0ea5e9',
-      internal: true 
-    },
-  ];
+  };
 
-  const adminActions = [
-    { 
-      name: t('Ongeza Bidhaa ya Mkopo'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/add/', 
-      color: '#10b981' 
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 20,
+          font: {
+            size: 12,
+          },
+        },
+      },
     },
-    { 
-      name: t('Tazama Bidhaa za Mikopo'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/', 
-      color: '#3b82f6' 
+  };
+
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          font: {
+            size: 12,
+          },
+        },
+      },
     },
-    { 
-      name: t('Tazama Wateja'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/customers/customer/', 
-      color: '#8b5cf6' 
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
     },
-    { 
-      name: t('Tazama Mikopo Yote'), 
-      href: 'https://microfinance-system-df49.onrender.com/admin/loans/loan/', 
-      color: '#ef4444' 
-    },
-  ];
+  };
 
   return (
     <div className="space-y-6">
@@ -235,23 +252,23 @@ const AdminDashboard = ({ user }) => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-2xl font-bold">
-              {t('Karibu')}, {user?.first_name || user?.username}!
+              Welcome, {user?.first_name || user?.username}!
             </h1>
             <p style={{ opacity: 0.9, marginTop: '4px' }}>
-              {t('Msimamizi wa Mfumo')} • {t('Ufikiaji Kamili wa Mfumo')}
+              System Administrator • Full System Access
             </p>
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>
-                {t('Msimamizi Mkuu')}
+                Super Admin
               </span>
               <span style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px' }}>
-                {t('Tawi Zote')}
+                All Branches
               </span>
             </div>
           </div>
           <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
             <button style={{ padding: '8px 16px', background: 'white', color: '#0369a1', borderRadius: '8px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>
-              {t('Hamisha Ripoti ya Mfumo')}
+              Export System Report
             </button>
           </div>
         </div>
@@ -285,74 +302,6 @@ const AdminDashboard = ({ user }) => {
         ))}
       </div>
 
-      {/* Loan Products Quick Access - Admin Only */}
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '20px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        border: '1px solid #e5e7eb'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Bidhaa za Mikopo')}</h3>
-          <span style={{ fontSize: '12px', color: '#6b7280' }}>
-            <a 
-              href="https://microfinance-system-df49.onrender.com/admin/loans/loanproduct/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ color: '#0284c7', textDecoration: 'none' }}
-            >
-              {t('Simamia Bidhaa')} →
-            </a>
-          </span>
-        </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '12px'
-        }}>
-          {adminActions.map((action) => (
-            <a
-              key={action.name}
-              href={action.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '16px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '12px',
-                textDecoration: 'none',
-                color: '#374151',
-                background: 'white',
-                transition: 'background 0.2s',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#f9fafb'}
-              onMouseLeave={(e) => e.target.style.background = 'white'}
-            >
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: action.color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '18px'
-              }}>
-                {action.name.charAt(0)}
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-
       {/* Quick Actions */}
       <div style={{
         background: 'white',
@@ -361,102 +310,184 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Vitendo vya Haraka')}</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Quick Actions</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '12px'
         }}>
-          {quickActions.map((action) => {
-            if (action.internal) {
-              return (
-                <Link
-                  key={action.name}
-                  to={action.href}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: '16px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px',
-                    textDecoration: 'none',
-                    color: '#374151',
-                    background: 'white',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: action.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '18px'
-                  }}>
-                    {action.name.charAt(0)}
-                  </div>
-                  <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
-                </Link>
-              );
-            }
-            return (
-              <a
-                key={action.name}
-                href={action.href}
-                target={action.href !== '#' ? '_blank' : '_self'}
-                rel="noopener noreferrer"
-                onClick={action.onClick}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  padding: '16px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  color: '#374151',
-                  background: 'white',
-                  transition: 'background 0.2s',
-                  cursor: 'pointer'
-                }}
-              >
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '10px',
-                  background: action.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '18px'
-                }}>
-                  {action.name.charAt(0)}
-                </div>
-                <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>{action.name}</span>
-                {action.href !== '#' && action.href !== '/loans/new' && (
-                  <span style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>
-                    ({t('Inafungua katika kichupo kipya')})
-                  </span>
-                )}
-              </a>
-            );
-          })}
+          <Link to="/admin/users" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#8b5cf6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              U
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Manage Users</span>
+          </Link>
+          <Link to="/admin/settings" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#6b7280',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              S
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>System Settings</span>
+          </Link>
+          <Link to="/admin/audit" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#6b7280',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              A
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Audit Logs</span>
+          </Link>
+          <Link to="/reports/export" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#22c55e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              E
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Export Reports</span>
+          </Link>
+          <Link to="/admin/branches" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#0ea5e9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              B
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>Manage Branches</span>
+          </Link>
+          <Link to="/loans/new" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: '#374151',
+            background: 'white'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#0ea5e9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px'
+            }}>
+              N
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '500', marginTop: '8px', textAlign: 'center' }}>New Loan</span>
+          </Link>
         </div>
       </div>
 
-      {/* Charts */}
+      {/* Charts Section */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1fr',
         gap: '24px'
       }}>
+        {/* Bar Chart */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -465,37 +496,19 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Utendaji wa Kifedha')}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Financial Performance</h3>
             <select style={{ padding: '4px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
-              <option>{t('Mwaka Huu')}</option>
-              <option>{t('Mwaka Ulopita')}</option>
-              <option>{t('Miezi 6 Iliyopita')}</option>
+              <option>This Year</option>
+              <option>Last Year</option>
+              <option>Last 6 Months</option>
             </select>
           </div>
           <div style={{ height: '300px' }}>
-            <Bar data={chartData} options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'top',
-                  labels: { font: { size: 12 } }
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: function(value) {
-                      return 'TZS ' + (value / 1000000).toFixed(0) + 'M';
-                    }
-                  }
-                }
-              }
-            }} />
+            <Bar data={barChartData} options={barOptions} />
           </div>
         </div>
 
+        {/* Doughnut Chart */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -503,40 +516,28 @@ const AdminDashboard = ({ user }) => {
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           border: '1px solid #e5e7eb'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Ubora wa Kwingineko')}</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Portfolio Quality</h3>
           <div style={{ height: '250px' }}>
-            <Doughnut data={doughnutData} options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    padding: 20,
-                    font: { size: 12 }
-                  }
-                }
-              }
-            }} />
+            <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px', textAlign: 'center' }}>
             <div>
               <p style={{ fontWeight: '600', color: '#22c55e' }}>{portfolio?.data?.performing || 75}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Inaendelea Vizuri')}</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>Performing</p>
             </div>
             <div>
               <p style={{ fontWeight: '600', color: '#f59e0b' }}>{portfolio?.data?.overdue_rate || 15}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Imechelewa')}</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>Overdue</p>
             </div>
             <div>
               <p style={{ fontWeight: '600', color: '#ef4444' }}>{portfolio?.data?.default_rate || 10}%</p>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>{t('Imeshindwa')}</p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>Defaulted</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Line Chart */}
+      {/* Line Chart - Growth Metrics */}
       <div style={{
         background: 'white',
         borderRadius: '12px',
@@ -544,21 +545,9 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Vipimo vya Ukuaji')}</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Growth Metrics</h3>
         <div style={{ height: '250px' }}>
-          <Line data={lineData} options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: { font: { size: 12 } }
-              }
-            },
-            scales: {
-              y: { beginAtZero: true }
-            }
-          }} />
+          <Line data={lineData} options={lineOptions} />
         </div>
       </div>
 
@@ -568,6 +557,7 @@ const AdminDashboard = ({ user }) => {
         gridTemplateColumns: '1fr 1fr',
         gap: '24px'
       }}>
+        {/* Recent Loans */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -576,8 +566,8 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Mikopo ya Hivi Karibuni')}</h3>
-            <Link to="/loans" style={{ color: '#0284c7', fontSize: '14px' }}>{t('Tazama Zote')} →</Link>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Loans</h3>
+            <Link to="/loans" style={{ color: '#0284c7', fontSize: '14px' }}>View All →</Link>
           </div>
           {loans?.data?.results?.slice(0, 5).map((loan) => (
             <div key={loan.id} style={{
@@ -603,13 +593,14 @@ const AdminDashboard = ({ user }) => {
                   background: loan.status === 'active' ? '#dcfce7' : '#fef3c7',
                   color: loan.status === 'active' ? '#166534' : '#92400e'
                 }}>
-                  {t(loan.status)}
+                  {loan.status}
                 </span>
               </div>
             </div>
           ))}
         </div>
 
+        {/* Recent Customers */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -618,8 +609,8 @@ const AdminDashboard = ({ user }) => {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t('Wateja wa Hivi Karibuni')}</h3>
-            <Link to="/customers" style={{ color: '#0284c7', fontSize: '14px' }}>{t('Tazama Zote')} →</Link>
+            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Customers</h3>
+            <Link to="/customers" style={{ color: '#0284c7', fontSize: '14px' }}>View All →</Link>
           </div>
           {customers?.data?.results?.slice(0, 5).map((customer) => (
             <div key={customer.id} style={{
@@ -658,7 +649,7 @@ const AdminDashboard = ({ user }) => {
                 background: customer.status === 'active' ? '#dcfce7' : '#fef3c7',
                 color: customer.status === 'active' ? '#166534' : '#92400e'
               }}>
-                {t(customer.status)}
+                {customer.status}
               </span>
             </div>
           ))}
@@ -673,7 +664,7 @@ const AdminDashboard = ({ user }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb'
       }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{t('Hali ya Mfumo')}</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>System Status</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -681,19 +672,19 @@ const AdminDashboard = ({ user }) => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('API: Imeunganishwa')}</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>API: Online</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Database: Imeunganishwa')}</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>Database: Connected</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#fefce8', borderRadius: '8px', border: '1px solid #fde68a' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Nakala: Saa 2 zilizopita')}</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>Backup: 2 hours ago</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '14px', fontWeight: '500' }}>{t('Watumiaji Mtandaoni: 12')}</span>
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>Users Online: 12</span>
           </div>
         </div>
       </div>
