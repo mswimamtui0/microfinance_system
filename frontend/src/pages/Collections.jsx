@@ -35,7 +35,6 @@ const Collections = () => {
           });
         } catch (error) {
           console.log(`No schedules for loan ${loan.loan_no}, creating fallback`);
-          // Fallback: create a schedule from loan data
           if (loan.status === 'active' || loan.status === 'disbursed') {
             schedules.push({
               id: `loan-${loan.id}`,
@@ -67,30 +66,41 @@ const Collections = () => {
     return <Loading />;
   }
 
+  // Date calculations - FIXED
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
+
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-  // Filter schedules
+  // Helper function to check if a date is overdue
+  const isDateOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
+  };
+
+  // Filter schedules based on selection
   const filteredSchedules = allSchedules.filter(item => {
     if (filter === 'today') {
       return item.due_date === todayStr;
     } else if (filter === 'tomorrow') {
       return item.due_date === tomorrowStr;
     } else if (filter === 'overdue') {
-      return item.status === 'overdue';
+      return isDateOverdue(item.due_date) && item.status !== 'paid';
     } else if (filter === 'defaulted') {
       return item.loan?.status === 'defaulted';
     }
     return true;
   });
 
-  // Calculate stats
-  const dueToday = allSchedules.filter(c => c.due_date === todayStr);
-  const dueTomorrow = allSchedules.filter(c => c.due_date === tomorrowStr);
-  const overdue = allSchedules.filter(c => c.status === 'overdue');
+  // Calculate stats - FIXED
+  const dueToday = allSchedules.filter(c => c.due_date === todayStr && c.status !== 'paid');
+  const dueTomorrow = allSchedules.filter(c => c.due_date === tomorrowStr && c.status !== 'paid');
+  const overdue = allSchedules.filter(c => isDateOverdue(c.due_date) && c.status !== 'paid');
   const defaulters = loans?.data?.results?.filter(l => l.status === 'defaulted') || [];
 
   const stats = [
@@ -148,7 +158,7 @@ const Collections = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 bg-white p-3 rounded-lg border border-gray-200">
+      <div className="flex gap-2 bg-white p-3 rounded-lg border border-gray-200 flex-wrap">
         <button
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
@@ -228,6 +238,9 @@ const Collections = () => {
                       {formatDate(item.due_date)}
                       {item.due_date === todayStr && (
                         <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">Today</span>
+                      )}
+                      {isDateOverdue(item.due_date) && item.status !== 'paid' && (
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">Overdue</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
