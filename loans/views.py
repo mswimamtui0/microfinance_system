@@ -204,35 +204,35 @@ class LoanViewSet(viewsets.ModelViewSet):
         return Response(result)
     
     @action(detail=True, methods=['post'])
-def approve(self, request, pk=None):
-    """Approve a loan"""
-    loan = self.get_object()
-    
-    # Allow approval from either draft or pending status
-    if loan.status not in ['draft', 'pending']:
-        return Response({
-            'error': 'Loan can only be approved from draft or pending status'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    loan.status = 'approved'
-    loan.approved_by = request.user
-    loan.approval_date = timezone.now().date()
-    loan.approved_amount = loan.principal
-    loan.save()
-    
-    return Response({'message': 'Loan approved successfully'})
+    def approve(self, request, pk=None):
+        """Approve a loan"""
+        loan = self.get_object()
+        
+        # Allow approval from either draft or pending status
+        if loan.status not in ['draft', 'pending']:
+            return Response({
+                'error': 'Loan can only be approved from draft or pending status'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        loan.status = 'approved'
+        loan.approved_by = request.user
+        loan.approval_date = timezone.now().date()
+        loan.approved_amount = loan.principal
+        loan.save()
+        
+        return Response({'message': 'Loan approved successfully'})
     
     @action(detail=True, methods=['post'])
     def disburse(self, request, pk=None):
         """Disburse approved loan"""
         loan = self.get_object()
         
-        if loan.status != 'pending':
+        if loan.status != 'approved':
             return Response({
-                'error': 'Loan must be in pending status to disburse'
+                'error': 'Loan must be in approved status to disburse'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        loan.status = 'disbursed'
+        loan.status = 'active'
         loan.disbursed_by = request.user
         loan.disbursement_date = timezone.now().date()
         
