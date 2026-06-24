@@ -273,5 +273,4 @@ const CustomerForm = ({ onClose, customer }) => {
     </div>
   );
 };
-
 export default CustomerForm;
