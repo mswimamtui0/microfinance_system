@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerAPI } from '../../api';
 import { useTranslation } from 'react-i18next';
-import toast from 'react-hot-toast';
+
 
 const CustomerForm = ({ onClose, customer }) => {
   const { t } = useTranslation();
