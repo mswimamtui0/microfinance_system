@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 // Pages
 import PublicHomepage from './pages/PublicHomepage';
