@@ -278,15 +278,15 @@ const PaymentForm = ({ onClose, loans = [], selectedLoan: propSelectedLoan }) =>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Amount to Pay (TZS) *</label>
               <input
-                type="number"
-                required
-                min="100"
-                step="100"
-                value={formData.amount_paid}
-                onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter payment amount"
-              />
+  type="number"
+  required
+  min="0.01"
+  step="0.01"
+  value={formData.amount_paid}
+  onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
+  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+  placeholder="Enter payment amount (e.g., 28884.66)"
+/>
               {selectedLoanDetails && (
                 <p className="mt-1 text-sm text-gray-500">
                   Maximum: {formatCurrency(getRemainingBalance())}
