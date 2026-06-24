@@ -34,7 +34,7 @@ const Collections = () => {
             });
           });
         } catch (error) {
-          console.log(`No schedules for loan ${loan.loan_no}, creating fallback`);
+          console.log(`No schedules for loan ${loan.loan_no}`);
           if (loan.status === 'active' || loan.status === 'disbursed') {
             schedules.push({
               id: `loan-${loan.id}`,
@@ -66,7 +66,7 @@ const Collections = () => {
     return <Loading />;
   }
 
-  // Date calculations - FIXED
+  // Date calculations
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
@@ -97,13 +97,18 @@ const Collections = () => {
     return true;
   });
 
-  // Calculate stats - FIXED
+  // Calculate stats
   const dueToday = allSchedules.filter(c => c.due_date === todayStr && c.status !== 'paid');
   const dueTomorrow = allSchedules.filter(c => c.due_date === tomorrowStr && c.status !== 'paid');
   const overdue = allSchedules.filter(c => isDateOverdue(c.due_date) && c.status !== 'paid');
   const defaulters = loans?.data?.results?.filter(l => l.status === 'defaulted') || [];
 
   const stats = [
+    { 
+      name: 'Total Collections', 
+      count: allSchedules.length,
+      total: allSchedules.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0),
+    },
     { 
       name: 'Due Today', 
       count: dueToday.length,
@@ -118,11 +123,6 @@ const Collections = () => {
       name: 'Overdue', 
       count: overdue.length,
       total: overdue.reduce((sum, c) => sum + (parseFloat(c.total_due) || 0), 0),
-    },
-    { 
-      name: 'Defaulters', 
-      count: defaulters.length,
-      total: defaulters.reduce((sum, l) => sum + (parseFloat(l.outstanding_balance) || 0), 0),
     },
   ];
 
@@ -141,12 +141,17 @@ const Collections = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Collections Dashboard</h1>
-        <button onClick={() => refetch()} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-          Refresh Data
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => refetch()} 
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Refresh Data
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Now includes Total Collections */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div key={stat.name} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -190,14 +195,6 @@ const Collections = () => {
           }`}
         >
           Overdue ({overdue.length})
-        </button>
-        <button
-          onClick={() => setFilter('defaulted')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            filter === 'defaulted' ? 'bg-red-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Defaulters ({defaulters.length})
         </button>
       </div>
 
