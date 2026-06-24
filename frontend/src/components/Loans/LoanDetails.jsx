@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const LoanDetails = ({ loan, onClose }) => {
   const [realTimeStatus, setRealTimeStatus] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const { data: schedule, isLoading: scheduleLoading } = useQuery({
     queryKey: ['loan-schedule', loan.id],
@@ -21,10 +22,21 @@ const LoanDetails = ({ loan, onClose }) => {
   useEffect(() => {
     const fetchRealTimeStatus = async () => {
       try {
+        setIsLoading(true);
         const response = await loanAPI.getLoanRealTimeStatus(loan.id);
+        console.log('Real-time status response:', response.data);
         setRealTimeStatus(response.data);
       } catch (error) {
         console.error('Error fetching real-time status:', error);
+        // If the endpoint fails, try the regular loan details
+        try {
+          const loanResponse = await loanAPI.getById(loan.id);
+          setRealTimeStatus(loanResponse.data);
+        } catch (e) {
+          console.error('Fallback also failed:', e);
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -62,13 +74,87 @@ const LoanDetails = ({ loan, onClose }) => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Format currency safely
+  // Safe format currency
   const safeFormatCurrency = (amount) => {
     if (amount === undefined || amount === null || isNaN(amount)) {
       return 'TZS 0';
     }
     return formatCurrency(amount);
   };
+
+  // Calculate real-time values if not provided by API
+  const getRealTimeValues = () => {
+    if (realTimeStatus && realTimeStatus.per_second !== undefined) {
+      return {
+        perSecond: realTimeStatus.per_second,
+        perMinute: realTimeStatus.per_minute,
+        perHour: realTimeStatus.per_hour,
+        perDay: realTimeStatus.per_day,
+        daysElapsed: realTimeStatus.time_elapsed?.days || 0,
+        daysRemaining: realTimeStatus.days_remaining || 0,
+        nextDue: realTimeStatus.next_due_date,
+        isOverdue: realTimeStatus.is_overdue,
+        daysOverdue: realTimeStatus.days_overdue || 0,
+        penalty: realTimeStatus.penalty || 0,
+      };
+    }
+    
+    // Calculate manually if API doesn't return values
+    if (loan) {
+      const today = new Date();
+      const disbursed = loan.disbursement_date ? new Date(loan.disbursement_date) : null;
+      const totalPayable = parseFloat(loan.total_payable) || 0;
+      const totalDays = (loan.term_months || 0) * 30;
+      
+      let daysElapsed = 0;
+      if (disbursed) {
+        daysElapsed = Math.floor((today - disbursed) / (1000 * 60 * 60 * 24));
+      }
+      const daysRemaining = Math.max(0, totalDays - daysElapsed);
+      
+      const perDay = totalDays > 0 ? totalPayable / totalDays : 0;
+      const perHour = perDay / 24;
+      const perMinute = perHour / 60;
+      const perSecond = perMinute / 60;
+      
+      // Find next due date
+      let nextDue = null;
+      if (loan.schedules && loan.schedules.length > 0) {
+        const pending = loan.schedules.find(s => s.status === 'pending');
+        if (pending) {
+          nextDue = pending.due_date;
+        }
+      }
+      
+      return {
+        perSecond,
+        perMinute,
+        perHour,
+        perDay,
+        daysElapsed,
+        daysRemaining,
+        nextDue,
+        isOverdue: loan.is_overdue || false,
+        daysOverdue: loan.days_overdue || 0,
+        penalty: 0,
+      };
+    }
+    
+    return {
+      perSecond: 0,
+      perMinute: 0,
+      perHour: 0,
+      perDay: 0,
+      daysElapsed: 0,
+      daysRemaining: 0,
+      nextDue: null,
+      isOverdue: false,
+      daysOverdue: 0,
+      penalty: 0,
+    };
+  };
+
+  const realTime = getRealTimeValues();
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -108,62 +194,63 @@ const LoanDetails = ({ loan, onClose }) => {
           </div>
 
           {/* Real-Time Status */}
-          {realTimeStatus && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
-              <h4 className="font-medium text-blue-900 mb-3">Real-Time Status</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-blue-700">Per Second:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {safeFormatCurrency(realTimeStatus.per_second || 0)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Per Minute:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {safeFormatCurrency(realTimeStatus.per_minute || 0)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Per Hour:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {safeFormatCurrency(realTimeStatus.per_hour || 0)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Per Day:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {safeFormatCurrency(realTimeStatus.per_day || 0)}
-                  </span>
-                </div>
+          <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
+            <h4 className="font-medium text-blue-900 mb-3">Real-Time Status</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700">Per Second:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perSecond)}
+                </span>
               </div>
-              <div className="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-blue-700">Days Elapsed:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {realTimeStatus.time_elapsed?.days || 0} days
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Days Remaining:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {Math.max(0, (realTimeStatus.total_days || 0) - (realTimeStatus.time_elapsed?.days || 0))} days
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700">Next Due:</span>
-                  <span className="ml-2 font-medium text-blue-900">
-                    {realTimeStatus.next_due_date ? formatDate(realTimeStatus.next_due_date) : '-'}
-                  </span>
-                </div>
-                {realTimeStatus.is_overdue && (
-                  <div className="col-span-2 md:col-span-3 text-red-600 font-medium">
-                    ⚠️ Overdue by {realTimeStatus.days_overdue} days | Penalty: {safeFormatCurrency(realTimeStatus.penalty || 0)}
-                  </div>
-                )}
+              <div>
+                <span className="text-blue-700">Per Minute:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perMinute)}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Per Hour:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perHour)}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Per Day:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {safeFormatCurrency(realTime.perDay)}
+                </span>
               </div>
             </div>
-          )}
+            <div className="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700">Days Elapsed:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {realTime.daysElapsed} days
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Days Remaining:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {realTime.daysRemaining} days
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700">Next Due:</span>
+                <span className="ml-2 font-medium text-blue-900">
+                  {realTime.nextDue ? formatDate(realTime.nextDue) : '-'}
+                </span>
+              </div>
+              {realTime.isOverdue && (
+                <div className="col-span-2 md:col-span-3 text-red-600 font-medium">
+                  Overdue by {realTime.daysOverdue} days | Penalty: {safeFormatCurrency(realTime.penalty)}
+                </div>
+              )}
+            </div>
+            {isLoading && (
+              <div className="text-xs text-blue-500 mt-2">Updating...</div>
+            )}
+          </div>
 
           {/* Loan Info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
